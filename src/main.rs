@@ -443,8 +443,15 @@ impl Scene {
 			// apply lighting and shading to the object
 			let mut color = self.apply_diffuse_shading(distance, &material, &hit_point, &surface_normal, &surface_uv);
 
-			// TODO: apply reflectivity
-			// TODO: apply refractivity
+			// apply reflective surface properties
+			if let &Material::Solid { reflectivity, .. } = material {
+				if reflectivity > 0.0 {
+					let reflection_ray = Ray::create_reflection(surface_normal, ray.direction, hit_point, EPSILON);
+
+					color = color * (1.0 - reflectivity);
+					color = color + (self.trace(reflection_ray, depth + 1, max_depth) * reflectivity);
+				}
+			}
 
 			return color;
 		}
@@ -492,12 +499,12 @@ impl Scene {
 					let in_light = !shadow_intersection.is_some() || shadow_intersection.unwrap().1 > distance_to_light;
 
 					// mix light color based on distance and intensity
-					let light_power = surface_normal.dot(direction_to_light) * (if in_light { intensity } else { 0.0 } );
+					let light_power = surface_normal.dot(direction_to_light) * (if in_light { intensity } else { 0.0 });
 					let light_reflected = albedo / PI;
 					let light_color = emissive * light_power * light_reflected;
 
 					color = color + albedo * light_color;
-				},
+				}
 			}
 		}
 
