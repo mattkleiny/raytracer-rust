@@ -18,8 +18,8 @@ const GAMMA: f64 = 2.2;
 const MAX_TRACE_DEPTH: usize = 3;
 
 // We use cgmath for it's excellent vector types.
-type Point = Vector2<f64>;
-type Vector = Vector2<f64>;
+type Point = Vector3<f64>;
+type Vector = Vector3<f64>;
 
 /// Clamps the given value between the given lower and upper bounds.
 fn clamp<V: PartialOrd>(value: V, lower: V, upper: V) -> V {
@@ -145,7 +145,7 @@ enum Material {
 	},
 	/// A textured image material.
 	Textured {
-		image: &'static str,
+		image: Image,
 		reflectivity: f64,
 	},
 }
@@ -159,8 +159,16 @@ impl Material {
 
 /// Defines a light in the scene.
 enum Light {
-	Directional,
-	Spherical,
+	Directional {
+		direction: Vector,
+		emissive: Color,
+		intensity: f64,
+	},
+	Spherical {
+		position: Point,
+		emissive: Color,
+		intensity: f64,
+	},
 }
 
 /// Defines a node in the scene.
@@ -197,11 +205,11 @@ impl SceneNode for Sphere {
 		unimplemented!()
 	}
 
-	fn calculate_normal(&self, point: &Vector2<f64>) -> Vector2<f64> {
+	fn calculate_normal(&self, point: &Point) -> Vector {
 		unimplemented!()
 	}
 
-	fn calculate_uv(&self, point: &Vector2<f64>) -> UV {
+	fn calculate_uv(&self, point: &Point) -> UV {
 		unimplemented!()
 	}
 
@@ -228,11 +236,11 @@ impl SceneNode for Plane {
 		unimplemented!()
 	}
 
-	fn calculate_normal(&self, point: &Vector2<f64>) -> Vector2<f64> {
+	fn calculate_normal(&self, point: &Point) -> Vector {
 		unimplemented!()
 	}
 
-	fn calculate_uv(&self, point: &Vector2<f64>) -> UV {
+	fn calculate_uv(&self, point: &Point) -> UV {
 		unimplemented!()
 	}
 
@@ -302,17 +310,56 @@ impl Default for Scene {
 
 /// Entry point for the ray-tracer.
 fn main() {
-	let mut scene = Scene {
+	// build a simple test scene
+	let scene = Scene {
 		lights: vec!(
-			Box::new(Light::Directional),
+			Box::new(Light::Directional {
+				direction: vec3(-1.0, -1.0, 0.0),
+				emissive: Color::WHITE,
+				intensity: 0.33,
+			}),
+			Box::new(Light::Directional {
+				direction: vec3(1.0, -1.0, 0.0),
+				emissive: Color::WHITE,
+				intensity: 0.33,
+			}),
+			Box::new(Light::Spherical {
+				position: vec3(0.0, 3.0, 0.0),
+				emissive: Color::WHITE,
+				intensity: 1.0,
+			}),
 		),
 		nodes: vec!(
 			Box::new(Sphere {
-				center: vec2(0.0, 0.0),
+				center: vec3(5.0, -1.0, -15.0),
 				radius: 2.0,
 				material: Material::Solid {
+					albedo: Color::BLUE,
+					reflectivity: 0.3,
+				},
+			}),
+			Box::new(Sphere {
+				center: vec3(3.0, 0.0, -35.0),
+				radius: 1.0,
+				material: Material::Solid {
+					albedo: Color::GREEN,
+					reflectivity: 0.1,
+				},
+			}),
+			Box::new(Sphere {
+				center: vec3(-5.5, 0.0, -15.0),
+				radius: 1.0,
+				material: Material::Textured {
+					image: Image::load("textures/checkerboard.png"),
+					reflectivity: 0.1,
+				},
+			}),
+			Box::new(Plane {
+				origin: vec3(0.0, -4.2, 0.0),
+				normal: vec3(0.0, -1.0, 0.0),
+				material: Material::Solid {
 					albedo: Color::WHITE,
-					reflectivity: 0.0,
+					reflectivity: 0.1,
 				},
 			})
 		),
