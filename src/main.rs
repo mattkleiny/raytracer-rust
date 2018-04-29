@@ -7,6 +7,7 @@ use cgmath::*;
 use image::GenericImage;
 use std::f64::consts::PI;
 use std::fs::File;
+use std::ops::{Add, Div, Mul, Sub};
 
 /// Minimum resolution for our floating-point comparisons.
 const EPSILON: f64 = 1e-7;
@@ -35,7 +36,7 @@ fn to_radians(degrees: f64) -> f64 {
 }
 
 /// Defines a color in floating-point RGBA color space.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 struct Color {
 	r: f64,
 	g: f64,
@@ -56,6 +57,62 @@ impl Color {
 			g: clamp(self.g, 0.0, 1.0),
 			b: clamp(self.b, 0.0, 1.0),
 		}
+	}
+}
+
+impl Add<f64> for Color {
+	type Output = Color;
+	fn add(self, rhs: f64) -> Self::Output {
+		Color { r: self.r + rhs, g: self.g + rhs, b: self.b + rhs }
+	}
+}
+
+impl Sub<f64> for Color {
+	type Output = Color;
+	fn sub(self, rhs: f64) -> Self::Output {
+		Color { r: self.r - rhs, g: self.g - rhs, b: self.b - rhs }
+	}
+}
+
+impl Mul<f64> for Color {
+	type Output = Color;
+	fn mul(self, rhs: f64) -> Self::Output {
+		Color { r: self.r * rhs, g: self.g * rhs, b: self.b * rhs }
+	}
+}
+
+impl Div<f64> for Color {
+	type Output = Color;
+	fn div(self, rhs: f64) -> Self::Output {
+		Color { r: self.r / rhs, g: self.g / rhs, b: self.b / rhs }
+	}
+}
+
+impl Add<Color> for Color {
+	type Output = Color;
+	fn add(self, rhs: Color) -> Self::Output {
+		Color { r: self.r + rhs.r, g: self.g + rhs.g, b: self.b + rhs.b }
+	}
+}
+
+impl Sub<Color> for Color {
+	type Output = Color;
+	fn sub(self, rhs: Color) -> Self::Output {
+		Color { r: self.r - rhs.r, g: self.g - rhs.g, b: self.b - rhs.b }
+	}
+}
+
+impl Mul<Color> for Color {
+	type Output = Color;
+	fn mul(self, rhs: Color) -> Self::Output {
+		Color { r: self.r * rhs.r, g: self.g * rhs.g, b: self.b * rhs.b }
+	}
+}
+
+impl Div<Color> for Color {
+	type Output = Color;
+	fn div(self, rhs: Color) -> Self::Output {
+		Color { r: self.r / rhs.r, g: self.g / rhs.g, b: self.b / rhs.b }
 	}
 }
 
@@ -143,7 +200,7 @@ impl Image {
 }
 
 /// Defines a ray in floating point 3-space.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 struct Ray {
 	origin: Point,
 	direction: Vector,
@@ -160,7 +217,7 @@ impl Ray {
 }
 
 /// Encapsulates UV texture mapping coordinates.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 struct UV {
 	pub u: f64,
 	pub v: f64,
@@ -227,7 +284,7 @@ enum Light {
 trait SceneNode {
 	/// Determines if the node intersects with the given ray, and returns the distance
 	/// along the ray at which the intersection occurs.
-	fn intersects(&self, ray: &Ray) -> Option<f64>;
+	fn intersects(&self, ray: Ray) -> Option<f64>;
 
 	/// Calculates the normal on the surface of the object at the given point.
 	fn calculate_normal(&self, point: &Point) -> Vector;
@@ -247,7 +304,7 @@ struct Sphere {
 }
 
 impl SceneNode for Sphere {
-	fn intersects(&self, ray: &Ray) -> Option<f64> {
+	fn intersects(&self, ray: Ray) -> Option<f64> {
 		// find dual intersection points and evaluate if within or outside of sphere
 		let line = self.center - ray.origin;
 		let adjacent = line.dot(ray.direction);
@@ -295,7 +352,7 @@ struct Plane {
 }
 
 impl SceneNode for Plane {
-	fn intersects(&self, ray: &Ray) -> Option<f64> {
+	fn intersects(&self, ray: Ray) -> Option<f64> {
 		let d = self.normal.dot(ray.direction);
 
 		if d >= EPSILON {
@@ -340,7 +397,7 @@ impl SceneNode for Plane {
 struct Scene {
 	field_of_view: f64,
 	background_color: Color,
-	lights: Vec<Box<Light>>,
+	lights: Vec<Light>,
 	nodes: Vec<Box<SceneNode>>,
 }
 
@@ -351,8 +408,9 @@ impl Scene {
 
 		for y in 0..height {
 			for x in 0..width {
+				// project a ray into the scene for each pixel in our resultant image
 				let camera_ray = self.project(x as f64, y as f64, width as f64, height as f64);
-				let color = self.trace(&camera_ray, 0, MAX_TRACE_DEPTH);
+				let color = self.trace(camera_ray, 0, MAX_TRACE_DEPTH);
 
 				image.set(x, y, color.clamp());
 			}
@@ -363,17 +421,16 @@ impl Scene {
 
 	/// Samples the color at the resultant object by projecting a ray into the scene
 	/// and following it along it's path of reflection/refraction.
-	fn trace(&self, ray: &Ray, depth: usize, max_depth: usize) -> Color {
+	fn trace(&self, ray: Ray, depth: usize, max_depth: usize) -> Color {
 		// don't trace beyond a certain level of recursion; technically light attenuates
 		// with each reflection but we don't model this property.
 		if depth >= max_depth {
 			return self.background_color.clone();
 		}
 
-		// project a ray into the scene for each pixel in our resultant image
+		// if we're able to locate a valid intersection for this ray
 		let intersection = self.find_intersecting_object(ray);
 
-		// if we're able to locate a valid intersection for this ray
 		if let Some(intersection) = intersection {
 			let (node, distance) = intersection;
 			let material = node.material();
@@ -408,14 +465,32 @@ impl Scene {
 
 		// walk through all lights in the scene
 		for light in self.lights.iter() {
-			unimplemented!()
+			match light {
+				&Light::Directional { direction, emissive, intensity } => {
+					let direction_to_light = -direction;
+
+					// cast a ray from the intersection point back to the light to see if we're in shadow
+					let shadow_ray = Ray { origin: hit_point + surface_normal * EPSILON, direction: direction_to_light };
+					let in_shadow = self.find_intersecting_object(shadow_ray).is_some();
+
+					// mix light color based on distance and intensity
+					let light_power = surface_normal.dot(direction_to_light) * (if in_shadow { 0.0 } else { intensity });
+					let light_reflected = albedo / PI;
+					let light_color = emissive * light_power * light_reflected;
+
+					color = color + albedo * light_color;
+				}
+				&Light::Spherical { .. } => {
+					// TODO: implement me
+				},
+			}
 		}
 
 		color
 	}
 
 	/// Traces a ray into the scene, attempting to find the first intersecting object that it collides with.
-	fn find_intersecting_object(&self, ray: &Ray) -> Option<(&Box<SceneNode>, f64)> {
+	fn find_intersecting_object(&self, ray: Ray) -> Option<(&Box<SceneNode>, f64)> {
 		let mut distance = 999999999.0;
 		let mut result: Option<(&Box<SceneNode>, f64)> = None;
 
@@ -469,21 +544,21 @@ fn main() {
 	// build a simple test scene
 	let scene = Scene {
 		lights: vec!(
-			Box::new(Light::Directional {
+			Light::Directional {
 				direction: vec3(-1.0, -1.0, 0.0),
 				emissive: Color::WHITE,
 				intensity: 0.33,
-			}),
-			Box::new(Light::Directional {
+			},
+			Light::Directional {
 				direction: vec3(1.0, -1.0, 0.0),
 				emissive: Color::WHITE,
 				intensity: 0.33,
-			}),
-			Box::new(Light::Spherical {
+			},
+			Light::Spherical {
 				position: vec3(0.0, 3.0, 0.0),
 				emissive: Color::WHITE,
 				intensity: 1.0,
-			}),
+			},
 		),
 		nodes: vec!(
 			Box::new(Sphere {
