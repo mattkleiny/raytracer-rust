@@ -151,8 +151,11 @@ struct Ray {
 
 impl Ray {
 	/// Creates a ray reflected around the given intersection point with the given normal and incidence.
-	pub fn create_reflection(normal: &Vector, incidence: &Vector, intersection: &Point, bias: f64) {
-		unimplemented!()
+	pub fn create_reflection(normal: Vector, incidence: Vector, intersection: Point, bias: f64) -> Ray {
+		let origin = intersection + (normal * bias);
+		let direction = incidence - (normal * 2.0 * incidence.dot(normal));
+
+		Ray { origin, direction }
 	}
 }
 
@@ -178,9 +181,31 @@ enum Material {
 }
 
 impl Material {
-	/// Samples the material at the given UV coordinates, returning it's color.
-	pub fn sample(&self, uv: &UV) -> Color {
-		unimplemented!()
+	/// Samples the material the given UV coordinates, returning it's color.
+	pub fn sample(&self, coords: &UV) -> Color {
+		// wraps the given floating point range to the given half upper bound
+		fn wrap(value: f64, bound: u32) -> u32 {
+			let signed_bound = bound as i32;
+			let float_coord = value * bound as f64;
+
+			let wrapped_coord = (float_coord as i32) % signed_bound;
+
+			if wrapped_coord < 0 {
+				(wrapped_coord + signed_bound) as u32
+			} else {
+				wrapped_coord as u32
+			}
+		}
+
+		match self {
+			&Material::Solid { ref albedo, .. } => albedo.clone(),
+			&Material::Textured { ref image, .. } => {
+				let x = wrap(coords.u, image.width);
+				let y = wrap(coords.v, image.height);
+
+				image.get(x, y).clone()
+			}
+		}
 	}
 }
 
@@ -223,15 +248,38 @@ struct Sphere {
 
 impl SceneNode for Sphere {
 	fn intersects(&self, ray: &Ray) -> Option<f64> {
-		unimplemented!()
+		// find dual intersection points and evaluate if within or outside of sphere
+		let line = self.center - ray.origin;
+		let adjacent = line.dot(ray.direction);
+		let distance2 = line.dot(line) - (adjacent * adjacent);
+		let radius2 = self.radius * self.radius;
+
+		if distance2 > radius2 {
+			return None;
+		}
+
+		let thc = (radius2 - distance2).sqrt();
+		let t0 = adjacent - thc;
+		let t1 = adjacent + thc;
+
+		if t0 < 0.0 && t1 < 0.0 {
+			return None;
+		}
+
+		Some(if t0 < t1 { t0 } else { t1 })
 	}
 
 	fn calculate_normal(&self, point: &Point) -> Vector {
-		unimplemented!()
+		(point - self.center).normalize()
 	}
 
 	fn calculate_uv(&self, point: &Point) -> UV {
-		unimplemented!()
+		let spherical = point - self.center;
+
+		let u = (1.0 + (spherical.z.atan2(spherical.x) / PI)) * 0.5;
+		let v = (spherical.y / self.radius).acos() / PI;
+
+		UV { u, v }
 	}
 
 	fn material(&self) -> &Material {
@@ -248,15 +296,39 @@ struct Plane {
 
 impl SceneNode for Plane {
 	fn intersects(&self, ray: &Ray) -> Option<f64> {
-		unimplemented!()
+		let d = self.normal.dot(ray.direction);
+
+		if d >= EPSILON {
+			let direction = self.origin - ray.origin;
+			let distance = direction.dot(self.normal) / d;
+
+			if distance >= 0.0 {
+				return Some(distance);
+			}
+		}
+
+		None
 	}
 
 	fn calculate_normal(&self, point: &Point) -> Vector {
-		unimplemented!()
+		-self.normal
 	}
 
 	fn calculate_uv(&self, point: &Point) -> UV {
-		unimplemented!()
+		let mut axis_x = self.normal.cross(vec3(0.0, 0.0, 1.0));
+
+		if axis_x.magnitude() == 0.0 {
+			axis_x = self.normal.cross(vec3(0.0, 1.0, 0.0));
+		}
+
+		let axis_y = self.normal.cross(axis_x);
+
+		let line = point - self.origin;
+
+		let u = line.dot(axis_x);
+		let v = line.dot(axis_y);
+
+		UV { u, v }
 	}
 
 	fn material(&self) -> &Material {
@@ -457,24 +529,3 @@ fn main() {
 	image.save("output.png");
 }
 
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	fn image_should_export_to_png_correctly() {
-		let mut image = Image::new(512, 512);
-
-		for y in 0..image.height {
-			for x in 0..image.width {
-				image.set(x, y, Color {
-					r: x as f64,
-					g: y as f64,
-					b: 0.0,
-				});
-			}
-		}
-
-		image.save("testoutput.png");
-	}
-}
