@@ -480,8 +480,23 @@ impl Scene {
 
 					color = color + albedo * light_color;
 				}
-				&Light::Spherical { .. } => {
-					// TODO: implement me
+				&Light::Spherical { position, emissive, intensity } => {
+					let direction_to_light = (position - hit_point).normalize();
+					let distance_to_light = (hit_point - position).magnitude();
+
+					let intensity = intensity / (4.0 * PI * distance_to_light);
+
+					// cast a ray from the intersection point back to the light to see if we're in shadow
+					let shadow_ray = Ray { origin: hit_point + surface_normal * EPSILON, direction: direction_to_light };
+					let shadow_intersection = self.find_intersecting_object(shadow_ray);
+					let in_light = !shadow_intersection.is_some() || shadow_intersection.unwrap().1 > distance_to_light;
+
+					// mix light color based on distance and intensity
+					let light_power = surface_normal.dot(direction_to_light) * (if in_light { intensity } else { 0.0 } );
+					let light_reflected = albedo / PI;
+					let light_color = emissive * light_power * light_reflected;
+
+					color = color + albedo * light_color;
 				},
 			}
 		}
