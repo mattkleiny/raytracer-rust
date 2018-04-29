@@ -6,14 +6,10 @@ extern crate image;
 use cgmath::*;
 use image::GenericImage;
 use std::f64::consts::PI;
-use std::fs::File;
 use std::ops::{Add, Div, Mul, Sub};
 
 /// Minimum resolution for our floating-point comparisons.
 const EPSILON: f64 = 1e-7;
-
-/// Gamma constant for image conversion.
-const GAMMA: f64 = 2.2;
 
 /// The maximum number of recursive traces we can perform when rendering the image.
 const MAX_TRACE_DEPTH: usize = 3;
@@ -131,10 +127,6 @@ impl Image {
 
 	/// Loads a .PNG image from the given path.
 	pub fn load(path: &str) -> Image {
-		fn decode_gamma(value: u8) -> f64 {
-			(value as f64).powf(GAMMA)
-		}
-
 		// load the source image, prepare an in-memory buffered image
 		let image = image::open(path).expect(&format!("Unable to load source image: {}", path));
 		let (width, height) = image.dimensions();
@@ -143,12 +135,12 @@ impl Image {
 
 		for y in 0..result.height {
 			for x in 0..result.width {
-				// sample source pixels; correct for gamma over conversion from u8 to f64.
+				// sample source pixels; convert from u8 to f64.
 				let source_pixel = image.get_pixel(x, y);
 				let corrected_pixel = Color {
-					r: decode_gamma(source_pixel.data[0]) * 255.0,
-					g: decode_gamma(source_pixel.data[1]) * 255.0,
-					b: decode_gamma(source_pixel.data[2]) * 255.0,
+					r: source_pixel.data[0] as f64 / 255.0,
+					g: source_pixel.data[1] as f64 / 255.0,
+					b: source_pixel.data[2] as f64 / 255.0,
 				};
 
 				result.set(x, y, corrected_pixel);
@@ -176,19 +168,15 @@ impl Image {
 
 	/// Saves the image in .PNG format to the given path.
 	pub fn save(&self, path: &str) {
-		fn encode_gamma(value: f64) -> u8 {
-			(value).powf(1.0 / GAMMA) as u8
-		}
-
 		let mut image = image::ImageBuffer::new(self.width, self.height);
 
 		for y in 0..self.height {
 			for x in 0..self.width {
 				let source_pixel = self.get(x, y);
 				let corrected_pixel = image::Rgb([
-					encode_gamma(source_pixel.r * 255.0),
-					encode_gamma(source_pixel.g * 255.0),
-					encode_gamma(source_pixel.b * 255.0),
+					(source_pixel.r * 255.0) as u8,
+					(source_pixel.g * 255.0) as u8,
+					(source_pixel.b * 255.0) as u8,
 				]);
 
 				image[(x, y)] = corrected_pixel;
@@ -238,6 +226,14 @@ enum Material {
 }
 
 impl Material {
+	/// Retrieves the reflectivity of the material.
+	pub fn reflectivity(&self) -> f64 {
+		match self {
+			&Material::Solid { reflectivity, .. } => reflectivity,
+			&Material::Textured { reflectivity, .. } => reflectivity,
+		}
+	}
+
 	/// Samples the material the given UV coordinates, returning it's color.
 	pub fn sample(&self, coords: &UV) -> Color {
 		// wraps the given floating point range to the given half upper bound
@@ -367,7 +363,7 @@ impl SceneNode for Plane {
 		None
 	}
 
-	fn calculate_normal(&self, point: &Point) -> Vector {
+	fn calculate_normal(&self, _point: &Point) -> Vector {
 		-self.normal
 	}
 
@@ -444,13 +440,12 @@ impl Scene {
 			let mut color = self.apply_diffuse_shading(distance, &material, &hit_point, &surface_normal, &surface_uv);
 
 			// apply reflective surface properties
-			if let &Material::Solid { reflectivity, .. } = material {
-				if reflectivity > 0.0 {
-					let reflection_ray = Ray::create_reflection(surface_normal, ray.direction, hit_point, EPSILON);
+			let reflectivity = material.reflectivity();
+			if reflectivity > 0.0 {
+				let reflection_ray = Ray::create_reflection(surface_normal, ray.direction, hit_point, EPSILON);
 
-					color = color * (1.0 - reflectivity);
-					color = color + (self.trace(reflection_ray, depth + 1, max_depth) * reflectivity);
-				}
+				color = color * (1.0 - reflectivity);
+				color = color + (self.trace(reflection_ray, depth + 1, max_depth) * reflectivity);
 			}
 
 			return color;
@@ -461,12 +456,7 @@ impl Scene {
 	}
 
 	/// Applies lighting to an object's material by evaluating all the lights in the scene.
-	fn apply_diffuse_shading(&self,
-													 distance: f64,
-													 material: &Material,
-													 hit_point: &Point,
-													 surface_normal: &Vector,
-													 surface_uv: &UV) -> Color {
+	fn apply_diffuse_shading(&self, _distance: f64, material: &Material, hit_point: &Point, surface_normal: &Vector, surface_uv: &UV) -> Color {
 		let mut color = Color::BLACK;
 		let albedo = material.sample(surface_uv);
 
@@ -569,12 +559,12 @@ fn main() {
 			Light::Directional {
 				direction: vec3(-1.0, -1.0, 0.0),
 				emissive: Color::WHITE,
-				intensity: 0.33,
+				intensity: 1.0,
 			},
 			Light::Directional {
 				direction: vec3(1.0, -1.0, 0.0),
 				emissive: Color::WHITE,
-				intensity: 0.33,
+				intensity: 1.0,
 			},
 			Light::Spherical {
 				position: vec3(0.0, 3.0, 0.0),
@@ -588,7 +578,7 @@ fn main() {
 				radius: 2.0,
 				material: Material::Solid {
 					albedo: Color::BLUE,
-					reflectivity: 0.3,
+					reflectivity: 0.6,
 				},
 			}),
 			Box::new(Sphere {
@@ -596,7 +586,15 @@ fn main() {
 				radius: 1.0,
 				material: Material::Solid {
 					albedo: Color::GREEN,
-					reflectivity: 0.1,
+					reflectivity: 0.3,
+				},
+			}),
+			Box::new(Sphere {
+				center: vec3(3.0, 2.0, -20.0),
+				radius: 1.0,
+				material: Material::Solid {
+					albedo: Color::RED,
+					reflectivity: 0.3,
 				},
 			}),
 			Box::new(Sphere {
@@ -604,7 +602,7 @@ fn main() {
 				radius: 1.0,
 				material: Material::Textured {
 					image: Image::load("textures/checkerboard.png"),
-					reflectivity: 0.1,
+					reflectivity: 0.2,
 				},
 			}),
 			Box::new(Plane {
@@ -620,7 +618,7 @@ fn main() {
 	};
 
 	// render the scene into an image
-	let image = scene.render(1920, 1080);
+	let image = scene.render(2560, 1440);
 
 	// and export as .PNG
 	image.save("output.png");
