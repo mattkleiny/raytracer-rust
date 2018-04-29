@@ -49,10 +49,6 @@ impl Color {
 	const BLUE: Color = Color { r: 0.0, g: 0.0, b: 1.0 };
 	const WHITE: Color = Color { r: 1.0, g: 1.0, b: 1.0 };
 
-	pub fn new(r: f64, g: f64, b: f64) -> Color {
-		Color { r, g, b }
-	}
-
 	/// Clamps all of the color's channels between (0.0 and 1.0).
 	pub fn clamp(&self) -> Color {
 		Color {
@@ -65,14 +61,15 @@ impl Color {
 
 /// A bit-mapped image of pixels, convertible to/from PNG.
 struct Image {
-	width: usize,
-	height: usize,
+	width: u32,
+	height: u32,
 	pixels: Vec<Color>,
 }
 
 impl Image {
-	pub fn new(width: usize, height: usize) -> Image {
-		Image { width, height, pixels: vec![Color::BLACK; width * height] }
+	/// Creates a new blank image with the given dimensions.
+	pub fn new(width: u32, height: u32) -> Image {
+		Image { width, height, pixels: vec![Color::BLACK; (width * height) as usize] }
 	}
 
 	/// Loads a .PNG image from the given path.
@@ -81,23 +78,43 @@ impl Image {
 			(value as f64).powf(GAMMA)
 		}
 
-		unimplemented!()
+		// load the source image, prepare an in-memory buffered image
+		let image = image::open(path).expect(&format!("Unable to load source image: {}", path));
+		let (width, height) = image.dimensions();
+
+		let mut result = Image::new(width, height);
+
+		for y in 0..result.height {
+			for x in 0..result.width {
+				// sample source pixels; correct for gamma over conversion from u8 to f64.
+				let source_pixel = image.get_pixel(x, y);
+				let corrected_pixel = Color {
+					r: decode_gamma(source_pixel.data[0]) * 255.0,
+					g: decode_gamma(source_pixel.data[1]) * 255.0,
+					b: decode_gamma(source_pixel.data[2]) * 255.0,
+				};
+
+				result.set(x, y, corrected_pixel);
+			}
+		}
+
+		result
 	}
 
 	/// Retrieves the color at the given (x, y) image coordinates.
-	pub fn get(&self, x: usize, y: usize) -> &Color {
+	pub fn get(&self, x: u32, y: u32) -> &Color {
 		assert!(x < self.width);
 		assert!(y < self.height);
 
-		&self.pixels[x + y * self.width]
+		&self.pixels[(x + y * self.width) as usize]
 	}
 
 	/// Sets the color at the given (x, y) image coordinates.
-	pub fn set(&mut self, x: usize, y: usize, color: Color) {
+	pub fn set(&mut self, x: u32, y: u32, color: Color) {
 		assert!(x < self.width);
 		assert!(y < self.height);
 
-		self.pixels[x + y * self.width] = color;
+		self.pixels[(x + y * self.width) as usize] = color;
 	}
 
 	/// Saves the image in .PNG format to the given path.
@@ -106,7 +123,22 @@ impl Image {
 			(value).powf(1.0 / GAMMA) as u8
 		}
 
-		unimplemented!()
+		let mut image = image::ImageBuffer::new(self.width, self.height);
+
+		for y in 0..self.height {
+			for x in 0..self.width {
+				let source_pixel = self.get(x, y);
+				let corrected_pixel = image::Rgb([
+					encode_gamma(source_pixel.r * 255.0),
+					encode_gamma(source_pixel.g * 255.0),
+					encode_gamma(source_pixel.b * 255.0),
+				]);
+
+				image[(x, y)] = corrected_pixel;
+			}
+		}
+
+		image.save(path).expect(&format!("Unable to save image: {}", path));
 	}
 }
 
@@ -118,10 +150,6 @@ struct Ray {
 }
 
 impl Ray {
-	pub fn new(origin: Point, direction: Vector) -> Ray {
-		Ray { origin, direction }
-	}
-
 	/// Creates a ray reflected around the given intersection point with the given normal and incidence.
 	pub fn create_reflection(normal: &Vector, incidence: &Vector, intersection: &Point, bias: f64) {
 		unimplemented!()
@@ -193,12 +221,6 @@ struct Sphere {
 	material: Material,
 }
 
-impl Sphere {
-	pub fn new(center: Point, radius: f64, material: Material) -> Sphere {
-		Sphere { center, radius, material }
-	}
-}
-
 impl SceneNode for Sphere {
 	fn intersects(&self, ray: &Ray) -> Option<f64> {
 		unimplemented!()
@@ -222,12 +244,6 @@ struct Plane {
 	origin: Point,
 	normal: Vector,
 	material: Material,
-}
-
-impl Plane {
-	pub fn new(origin: Point, normal: Vector, material: Material) -> Plane {
-		Plane { origin, normal, material }
-	}
 }
 
 impl SceneNode for Plane {
@@ -258,7 +274,7 @@ struct Scene {
 
 impl Scene {
 	/// Renders the scene to an image with the given dimensions.
-	pub fn render(&self, width: usize, height: usize) -> Image {
+	pub fn render(&self, width: u32, height: u32) -> Image {
 		let mut image = Image::new(width, height);
 
 		for y in 0..height {
@@ -434,9 +450,31 @@ fn main() {
 		..Default::default()
 	};
 
-	// render at a decent resolution
+	// render the scene into an image
 	let image = scene.render(1920, 1080);
 
-	// and save to .PNG
+	// and export as .PNG
 	image.save("output.png");
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn image_should_export_to_png_correctly() {
+		let mut image = Image::new(512, 512);
+
+		for y in 0..image.height {
+			for x in 0..image.width {
+				image.set(x, y, Color {
+					r: x as f64,
+					g: y as f64,
+					b: 0.0,
+				});
+			}
+		}
+
+		image.save("testoutput.png");
+	}
 }
