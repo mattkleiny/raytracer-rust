@@ -1,18 +1,28 @@
+//! A simple software-only scene ray-tracing implementation with Rust.
+
 extern crate cgmath;
 extern crate image;
 
 use cgmath::*;
+use image::GenericImage;
 use std::f64::consts::PI;
+use std::fs::File;
 
+/// Minimum resolution for our floating-point comparisons.
 const EPSILON: f64 = 1e-7;
+
+/// Gamma constant for RGBA conversion.
 const GAMMA: f64 = 2.2;
 
+/// The maximum number of recursive traces we can perform when rendering the image.
 const MAX_TRACE_DEPTH: usize = 3;
 
+// We use cgmath for it's excellent vector types.
 type Point = Vector2<f64>;
 type Vector = Vector2<f64>;
 
-fn clamp(value: f64, lower: f64, upper: f64) -> f64 {
+/// Clamps the given value between the given lower and upper bounds.
+fn clamp<V: PartialOrd>(value: V, lower: V, upper: V) -> V {
 	match () {
 		_ if value > upper => upper,
 		_ if value < lower => lower,
@@ -20,10 +30,20 @@ fn clamp(value: f64, lower: f64, upper: f64) -> f64 {
 	}
 }
 
+/// Converts the given value to radians from degrees.
 fn to_radians(degrees: f64) -> f64 {
 	degrees * (PI / 180.0)
 }
 
+fn encode_gamma(value: f64) -> u8 {
+	(value).powf(1.0 / GAMMA) as u8
+}
+
+fn decode_gamma(value: u8) -> f64 {
+	(value as f64).powf(GAMMA)
+}
+
+/// Defines a color in floating-point RGBA color space.
 #[derive(Clone, Debug)]
 struct Color {
 	r: f64,
@@ -42,6 +62,7 @@ impl Color {
 		Color { r, g, b }
 	}
 
+	/// Clamps all of the color's channels between (0.0 and 1.0).
 	pub fn clamp(&self) -> Color {
 		Color {
 			r: clamp(self.r, 0.0, 1.0),
@@ -51,6 +72,7 @@ impl Color {
 	}
 }
 
+/// A bit-mapped image of pixels, convertible to/from PNG.
 struct Image {
 	width: usize,
 	height: usize,
@@ -62,10 +84,12 @@ impl Image {
 		Image { width, height, pixels: vec![Color::BLACK; width * height] }
 	}
 
+	/// Loads a .PNG image from the given path.
 	pub fn load(path: &str) -> Image {
 		unimplemented!()
 	}
 
+	/// Retrieves the color at the given (x, y) image coordinates.
 	pub fn get(&self, x: usize, y: usize) -> &Color {
 		assert!(x < self.width);
 		assert!(y < self.height);
@@ -73,6 +97,7 @@ impl Image {
 		&self.pixels[x + y * self.width]
 	}
 
+	/// Sets the color at the given (x, y) image coordinates.
 	pub fn set(&mut self, x: usize, y: usize, color: Color) {
 		assert!(x < self.width);
 		assert!(y < self.height);
@@ -80,11 +105,13 @@ impl Image {
 		self.pixels[x + y * self.width] = color;
 	}
 
+	/// Saves the image in .PNG format to the given path.
 	pub fn save(&self, path: &str) {
 		unimplemented!()
 	}
 }
 
+/// Defines a ray in floating point 3-space.
 #[derive(Clone, Debug)]
 struct Ray {
 	origin: Point,
@@ -96,22 +123,27 @@ impl Ray {
 		Ray { origin, direction }
 	}
 
+	/// Creates a ray reflected around the given intersection point with the given normal and incidence.
 	pub fn create_reflection(normal: &Vector, incidence: &Vector, intersection: &Point, bias: f64) {
 		unimplemented!()
 	}
 }
 
+/// Encapsulates UV texture mapping coordinates.
 #[derive(Clone, Debug)]
 struct UV {
 	pub u: f64,
 	pub v: f64,
 }
 
+/// Defines the material properties of some object.
 enum Material {
+	/// A solid colored material.
 	Solid {
 		albedo: Color,
 		reflectivity: f64,
 	},
+	/// A textured image material.
 	Textured {
 		image: &'static str,
 		reflectivity: f64,
@@ -119,23 +151,35 @@ enum Material {
 }
 
 impl Material {
+	/// Samples the material at the given UV coordinates, returning it's color.
 	pub fn sample(&self, uv: &UV) -> Color {
 		unimplemented!()
 	}
 }
 
+/// Defines a light in the scene.
 enum Light {
 	Directional,
 	Spherical,
 }
 
-trait Node {
+/// Defines a node in the scene.
+trait SceneNode {
+	/// Determines if the node intersects with the given ray, and returns the distance
+	/// along the ray at which the intersection occurs.
 	fn intersects(&self, ray: &Ray) -> Option<f64>;
+
+	/// Calculates the normal on the surface of the object at the given point.
 	fn calculate_normal(&self, point: &Point) -> Vector;
+
+	/// Calculates the UV coordinates for the object's surface material at the given point.
 	fn calculate_uv(&self, point: &Point) -> UV;
+
+	/// Retrieves the material used by the node.
 	fn material(&self) -> &Material;
 }
 
+/// Defines a sphere in the scene.
 struct Sphere {
 	center: Point,
 	radius: f64,
@@ -148,7 +192,7 @@ impl Sphere {
 	}
 }
 
-impl Node for Sphere {
+impl SceneNode for Sphere {
 	fn intersects(&self, ray: &Ray) -> Option<f64> {
 		unimplemented!()
 	}
@@ -166,6 +210,7 @@ impl Node for Sphere {
 	}
 }
 
+/// Defines a plane in the scene.
 struct Plane {
 	origin: Point,
 	normal: Vector,
@@ -178,7 +223,7 @@ impl Plane {
 	}
 }
 
-impl Node for Plane {
+impl SceneNode for Plane {
 	fn intersects(&self, ray: &Ray) -> Option<f64> {
 		unimplemented!()
 	}
@@ -196,14 +241,16 @@ impl Node for Plane {
 	}
 }
 
+/// Defines the scene properties for the ray-tracing algorithm.
 struct Scene {
 	field_of_view: f64,
 	background_color: Color,
 	lights: Vec<Box<Light>>,
-	nodes: Vec<Box<Node>>,
+	nodes: Vec<Box<SceneNode>>,
 }
 
 impl Scene {
+	/// Renders the scene to an image with the given dimensions.
 	pub fn render(&self, width: usize, height: usize) -> Image {
 		let mut image = Image::new(width, height);
 
@@ -219,62 +266,58 @@ impl Scene {
 		image
 	}
 
+	/// Projects a ray into the scene at the given coordinates.
 	fn project(&self, x: usize, y: usize, width: usize, height: usize) -> Ray {
 		unimplemented!()
 	}
 
+	/// Samples the color at the resultant object by projecting a ray into the scene
+	/// and following it along it's path of reflection/refraction.
 	fn trace(&self, ray: &Ray, depth: usize, max_depth: usize) -> Color {
+		// don't trace beyond a certain level of recursion; technically light attenuates
+		// with each reflection but we don't model this property.
+		if depth >= max_depth {
+			return self.background_color.clone();
+		}
+
+		unimplemented!()
+	}
+
+	/// Traces a ray into the scene, attempting to find the first intersecting object that it collides with
+	fn find_intersection_object(&self, ray: &Ray) -> Option<(&SceneNode, f64)> {
 		unimplemented!()
 	}
 }
 
-struct SceneBuilder {
-	field_of_view: f64,
-	background_color: Color,
-	lights: Vec<Box<Light>>,
-	nodes: Vec<Box<Node>>,
-}
-
-impl SceneBuilder {
-	pub fn new() -> SceneBuilder {
-		SceneBuilder {
+impl Default for Scene {
+	fn default() -> Self {
+		Self {
 			field_of_view: 90.0,
 			background_color: Color::BLACK,
 			lights: Vec::new(),
 			nodes: Vec::new(),
 		}
 	}
-
-	pub fn set_field_of_view(&mut self, fov: f64) -> &mut SceneBuilder {
-		self.field_of_view = fov;
-		self
-	}
-
-	pub fn set_background_color(&mut self, color: Color) -> &mut SceneBuilder {
-		self.background_color = color;
-		self
-	}
-
-	pub fn add_light(&mut self, light: Box<Light>) -> &mut SceneBuilder {
-		self.lights.push(light);
-		self
-	}
-
-	pub fn add_node(&mut self, node: Box<Node>) -> &mut SceneBuilder {
-		self.nodes.push(node);
-		self
-	}
-
-	pub fn build(&self) -> Scene {
-		unimplemented!()
-	}
 }
 
+/// Entry point for the ray-tracer.
 fn main() {
-	let scene = SceneBuilder::new()
-			.set_field_of_view(75.0)
-			.set_background_color(Color::WHITE)
-			.build();
+	let mut scene = Scene {
+		lights: vec!(
+			Box::new(Light::Directional),
+		),
+		nodes: vec!(
+			Box::new(Sphere {
+				center: vec2(0.0, 0.0),
+				radius: 2.0,
+				material: Material::Solid {
+					albedo: Color::WHITE,
+					reflectivity: 0.0,
+				},
+			})
+		),
+		..Default::default()
+	};
 
 	let image = scene.render(1920, 1080);
 
