@@ -2,13 +2,13 @@
 name = "rusttracer"
 version = "0.1.0"
 authors = ["Matt Kleinschafer <xeusalmighty@gmail.com>"]
+edition = "2021"
+
+[profile.dev]
+opt-level = 1
 
 [profile.dev.package."*"]
-opt-level = 2
-
-[profile.release.build-override]
-opt-level = 0
+opt-level = 3
 
 [dependencies]
-cgmath = { version = "0.16.1", default-features = false }
-image = { version = "0.19.0", default-features = false, features = ["png_codec"] }
+image = { version = "0.24.2", default-features = false, features = ["png"] }
