@@ -12,5 +12,4 @@ opt-level = 3
 
 [dependencies]
 anyhow = "1.0.57"
-smallvec = "1.8.0"
 image = { version = "0.24.2", default-features = false, features = ["png"] }

@@ -17,11 +17,8 @@ fn main() {
 
   // lets render a simple scene
   let light = PointLight::new(vec3(-10., 10., -10.), rgb(1., 1., 1.));
-  let sphere = Sphere::new(point(0., 0., 0.), 1.25)
-      .with_material(Material {
-        color: rgb(1., 0.2, 1.),
-        ..Material::default()
-      });
+  let sphere = Sphere::new()
+      .with_material(Material::default().with_color(rgb(1., 0.2, 1.)));
 
   for y in 0..canvas.height() {
     for x in 0..canvas.width() {
@@ -34,13 +31,13 @@ fn main() {
 
       let ray = Ray::new(point, direction);
 
-      if let Some(distance) = sphere.intersect(ray).closest_hit() {
-        let hit_position = ray.position(distance);
+      if let Some(intersection) = sphere.intersect(ray).closest_hit() {
+        let hit_position = ray.position(intersection.distance);
         let hit_normal = sphere.normal_at(hit_position);
         let eye = -ray.direction;
 
         let color = phong_lighting(
-          &sphere.material(),
+          &intersection.object.material(),
           &light,
           hit_position,
           hit_normal,
@@ -48,7 +45,7 @@ fn main() {
         );
 
         canvas.set_pixel(x, y, color);
-      }
+      };
     }
   }
 

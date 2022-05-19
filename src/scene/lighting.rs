@@ -34,10 +34,10 @@ pub fn phong_lighting(material: &Material, light: &PointLight, position: Vector,
   let mut specular = Color::BLACK;
 
   // A negative number means the light is on the other side of the surface
-  let light_normal = light_direction.dot(normal);
-  if light_normal >= 0. {
+  let light_dot_normal = light_direction.dot(normal);
+  if light_dot_normal >= 0. {
     // compute the diffuse contribution
-    diffuse = effective_color * material.diffuse * light_normal;
+    diffuse = effective_color * material.diffuse * light_dot_normal;
 
     // A negative number means the light reflects away from the eye
     let reflect_direction = Vector::reflect(-light_direction, normal);
