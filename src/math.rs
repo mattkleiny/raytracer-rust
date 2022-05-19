@@ -5,12 +5,12 @@ pub use tuples::*;
 mod tuples;
 
 /// Determines that two values are approximately equal.
-pub trait ApproxEq<Rhs = Self> where Self: Copy {
-  fn is_approx(self, rhs: Rhs) -> bool;
+pub trait ApproxEq<Rhs = Self> {
+  fn is_approx(&self, rhs: Rhs) -> bool;
 }
 
 impl ApproxEq for f32 {
-  fn is_approx(self, rhs: Self) -> bool {
+  fn is_approx(&self, rhs: Self) -> bool {
     (self - rhs).abs() < f32::EPSILON
   }
 }
