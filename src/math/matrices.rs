@@ -1,9 +1,12 @@
 //! Linear algebra matrix operations and utilities.
 
 use std::fmt::{Debug, Formatter};
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Mul};
+
+use crate::math::tuple;
 
 use super::ApproxEq;
+use super::Tuple;
 
 pub type Matrix2x2 = Matrix<2, 4>;
 pub type Matrix3x3 = Matrix<3, 9>;
@@ -13,7 +16,7 @@ pub type Matrix4x4 = Matrix<4, 16>;
 ///
 /// S = Stride of the matrix; how far between each row.
 /// L = Length of the matrix; total number of elements.
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Matrix<const S: usize, const L: usize> {
   elements: [f32; L],
 }
@@ -29,6 +32,19 @@ impl<const S: usize, const L: usize> Matrix<S, L> {
   /// Constructs a matrix from the given elements.
   pub const fn from_elements(elements: &[f32; L]) -> Self {
     Self { elements: *elements }
+  }
+
+  /// Transposes the matrix.
+  pub fn transpose(&self) -> Self {
+    let mut result = Self::new();
+
+    for i in 0..S {
+      for j in 0..S {
+        result[(i, j)] = self[(j, i)];
+      }
+    }
+
+    result
   }
 }
 
@@ -83,6 +99,49 @@ impl<const S: usize, const L: usize> PartialEq for Matrix<S, L> {
   }
 }
 
+impl<const S: usize, const L: usize> Mul for Matrix<S, L> {
+  type Output = Self;
+
+  /// Multiplies two matrices together.
+  fn mul(self, rhs: Self) -> Self::Output {
+    let mut result = Self::ZERO;
+
+    for y in 0..S {
+      for x in 0..S {
+        let mut sum = 0.;
+
+        for i in 0..S {
+          sum += self[(y, i)] * rhs[(i, x)];
+        }
+
+        result[(y, x)] = sum;
+      }
+    }
+
+    result
+  }
+}
+
+impl Mul<Tuple> for Matrix4x4 {
+  type Output = Tuple;
+
+  /// Multiplies a 4x4 matrix by a tuple.
+  fn mul(self, rhs: Tuple) -> Self::Output {
+    let mut result = tuple(0., 0., 0., 0.);
+
+    for row in 0..4 {
+      let x = self[(row, 0)] * rhs.x;
+      let y = self[(row, 1)] * rhs.y;
+      let z = self[(row, 2)] * rhs.z;
+      let w = self[(row, 3)] * rhs.w;
+
+      result[row] = x + y + z + w;
+    }
+
+    result
+  }
+}
+
 impl Matrix2x2 {
   pub const IDENTITY: Self = Self::identity();
 
@@ -92,6 +151,20 @@ impl Matrix2x2 {
       1., 0.,
       0., 1.,
     ])
+  }
+
+  /// Computes the determinant of the matrix.
+  ///
+  /// A determinant 'determines' whether a system has a solution.
+  pub fn determinant(&self) -> f32 {
+    // TODO: make this work across all dimensions.
+
+    let a = self[(0, 0)];
+    let b = self[(0, 1)];
+    let c = self[(1, 0)];
+    let d = self[(1, 1)];
+
+    a * d - b * c
   }
 }
 
@@ -202,5 +275,89 @@ mod tests {
     ]);
 
     assert_ne!(a, b);
+  }
+
+  #[test]
+  fn matrices_can_multiply_by_other_matrices() {
+    let a = Matrix4x4::from_elements(&[
+      1., 2., 3., 4.,
+      5., 6., 7., 8.,
+      9., 8., 7., 6.,
+      5., 4., 3., 2.,
+    ]);
+
+    let b = Matrix4x4::from_elements(&[
+      -2., 1., 2., 3.,
+      3., 2., 1., -1.,
+      4., 3., 6., 5.,
+      1., 2., 7., 8.,
+    ]);
+
+    assert_eq!(a * b, Matrix4x4::from_elements(&[
+      20., 22., 50., 48.,
+      44., 54., 114., 108.,
+      40., 58., 110., 102.,
+      16., 26., 46., 42.,
+    ]));
+  }
+
+  #[test]
+  fn matrices_should_multiply_by_tuples() {
+    let a = Matrix4x4::from_elements(&[
+      1., 2., 3., 4.,
+      2., 4., 4., 2.,
+      8., 6., 4., 1.,
+      0., 0., 0., 1.,
+    ]);
+
+    let result = a * tuple(1., 2., 3., 1.);
+
+    assert_eq!(result, tuple(18., 24., 33., 1.));
+  }
+
+  #[test]
+  fn matrix_multiplication_by_identity_should_be_inert() {
+    let a = Matrix4x4::from_elements(&[
+      0., 1., 2., 4.,
+      1., 2., 4., 8.,
+      2., 4., 8., 16.,
+      4., 8., 16., 32.,
+    ]);
+
+    assert_eq!(a * Matrix4x4::IDENTITY, a);
+  }
+
+  #[test]
+  fn matrix_multiplication_by_tuple_should_be_inert() {
+    let a = tuple(1., 2., 3., 4.);
+
+    assert_eq!(Matrix4x4::IDENTITY * a, a);
+  }
+
+  #[test]
+  fn matrix_transpose_should_work_correctly() {
+    let a = Matrix4x4::from_elements(&[
+      0., 9., 3., 0.,
+      9., 8., 0., 8.,
+      1., 8., 5., 3.,
+      0., 0., 5., 8.,
+    ]);
+
+    assert_eq!(a.transpose(), Matrix4x4::from_elements(&[
+      0., 9., 1., 0.,
+      9., 8., 8., 0.,
+      3., 0., 5., 5.,
+      0., 8., 3., 8.,
+    ]));
+  }
+
+  #[test]
+  fn determinant_should_be_calculated_correctly() {
+    let a = Matrix2x2::from_elements(&[
+      1., 5.,
+      -3., 2.,
+    ]);
+
+    assert_eq!(a.determinant(), 17.);
   }
 }

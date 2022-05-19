@@ -1,6 +1,6 @@
 //! Defines basic tuple operations in floating point vector space.
 
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
 use super::ApproxEq;
 
@@ -100,6 +100,32 @@ impl PartialEq for Tuple {
     let w = self.w.is_approx(other.w);
 
     x && y && z && w
+  }
+}
+
+impl Index<usize> for Tuple {
+  type Output = f32;
+
+  fn index(&self, index: usize) -> &Self::Output {
+    match index {
+      0 => &self.x,
+      1 => &self.y,
+      2 => &self.z,
+      3 => &self.w,
+      _ => panic!("Index out of range!")
+    }
+  }
+}
+
+impl IndexMut<usize> for Tuple {
+  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    match index {
+      0 => &mut self.x,
+      1 => &mut self.y,
+      2 => &mut self.z,
+      3 => &mut self.w,
+      _ => panic!("Index out of range!")
+    }
   }
 }
 
