@@ -1,4 +1,4 @@
-//! Standard mathematics and related linear algebra for implementing our ray tracer.
+//! Standard mathematical tools.
 
 pub use colors::*;
 pub use matrices::*;

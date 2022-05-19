@@ -1,4 +1,4 @@
-//! Ray projection and arithmetic.
+//! Ray types and arithmetic.
 
 use super::Tuple;
 

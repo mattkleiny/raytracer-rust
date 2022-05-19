@@ -1,4 +1,4 @@
-//! Linear algebra matrix operations and utilities.
+//! Matrix types and utilities.
 
 use std::fmt::{Debug, Formatter};
 use std::ops::{Index, IndexMut, Mul};
@@ -11,7 +11,7 @@ pub type Matrix4x4 = Matrix<4, 16>;
 
 /// A rectangular matrix of N by N elements, with the given row stride.
 ///
-/// S = Stride of the matrix; how far between each row.
+/// S = Stride of the matrix; how many columns between each row.
 /// L = Length of the matrix; total number of elements.
 #[derive(Copy, Clone)]
 pub struct Matrix<const S: usize, const L: usize> {
@@ -88,7 +88,7 @@ impl<const S: usize, const L: usize> PartialEq for Matrix<S, L> {
   /// Standard per-element equality.
   fn eq(&self, other: &Self) -> bool {
     for i in 0..self.elements.len() {
-      if !self.elements[i].is_approx(other.elements[i]) {
+    if !self.elements[i].is_approx(other.elements[i]) {
         return false;
       }
     }

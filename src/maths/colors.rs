@@ -1,4 +1,4 @@
-//! Defines basic color operations in floating point linear color space.
+//! Color types and conversions.
 
 use std::ops::{Add, Mul, Sub};
 

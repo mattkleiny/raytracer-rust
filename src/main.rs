@@ -1,3 +1,5 @@
+//! A fun little Ray Tracer built with Rust.
+
 #![allow(dead_code)]
 
 #[macro_use]

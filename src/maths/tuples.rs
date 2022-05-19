@@ -1,4 +1,4 @@
-//! Defines basic tuple operations in floating point vector space.
+//! Tuple types for points and vectors.
 
 use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 

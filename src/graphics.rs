@@ -1,3 +1,5 @@
+//! Graphics abstractions and tools.
+
 use image::{ImageBuffer, ImageFormat, ImageResult, Rgba, RgbaImage};
 
 use crate::maths::Color;

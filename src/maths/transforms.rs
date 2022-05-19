@@ -1,4 +1,4 @@
-//! Transformations for vectors and matrices.
+//! Transformation matrices for vectors and points.
 
 use super::Matrix4x4;
 
