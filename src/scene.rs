@@ -12,7 +12,7 @@ mod spheres;
 /// Allows an object to calculate intersection information with a Ray.
 pub trait Object {
   /// Calculates the distances of intersection for the given ray.
-  fn intersect(&self, ray: &Ray) -> IntersectSet;
+  fn intersect(&self, ray: Ray) -> IntersectSet;
 }
 
 /// A set of intersections for a particular object.K
@@ -33,21 +33,22 @@ impl<'a> IntersectSet<'a> {
 
   /// Finds the closest hit intersection.
   pub fn closest_hit(&self) -> Option<f32> {
-    if self.hits.len() == 0 {
-      return None;
-    }
-
-    // find the closest intersection
-    let mut closest = 0.;
+    let mut any = false;
+    let mut closest = f32::MAX;
 
     for t in &self.hits {
       let t = *t; // ugly hack
-      if t > 0. && t > closest {
+      if t > 0. && t < closest {
         closest = t;
+        any = true;
       }
     }
 
-    Some(closest)
+    if any {
+      Some(closest)
+    } else {
+      None
+    }
   }
 }
 
