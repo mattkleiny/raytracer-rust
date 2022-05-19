@@ -139,6 +139,7 @@ impl Mul<Tuple> for Matrix4x4 {
   }
 }
 
+/// Specializations for 4x4 matrices.
 impl Matrix4x4 {
   pub const IDENTITY: Self = Self::identity();
 
@@ -223,6 +224,7 @@ impl Matrix4x4 {
   }
 }
 
+/// Specializations for 3x3 matrices.
 impl Matrix3x3 {
   pub const IDENTITY: Self = Self::identity();
 
@@ -288,6 +290,7 @@ impl Matrix3x3 {
   }
 }
 
+/// Specializations for 2x2 matrices.
 impl Matrix2x2 {
   pub const IDENTITY: Self = Self::identity();
 

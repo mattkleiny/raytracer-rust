@@ -2,10 +2,12 @@
 
 pub use colors::*;
 pub use matrices::*;
+pub use transforms::*;
 pub use tuples::*;
 
 mod colors;
 mod matrices;
+mod transforms;
 mod tuples;
 
 const EPSILON: f32 = 0.00001;

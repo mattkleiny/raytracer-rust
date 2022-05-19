@@ -4,6 +4,9 @@ use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
 use super::ApproxEq;
 
+pub type Point = Tuple;
+pub type Vector = Tuple;
+
 /// Creates a (X, Y, Z, W) tuple in floating point 4-space.
 #[inline]
 pub const fn tuple(x: f32, y: f32, z: f32, w: f32) -> Tuple {
@@ -32,6 +35,10 @@ pub struct Tuple {
 }
 
 impl Tuple {
+  pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+    Self { x, y, z, w }
+  }
+
   /// Does this tuple represent a vector between two points?
   #[inline]
   pub fn is_vector(&self) -> bool {
