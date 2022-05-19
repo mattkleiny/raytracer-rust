@@ -18,6 +18,14 @@ pub struct Color {
   pub b: f32,
 }
 
+impl Color {
+  pub const BLACK: Self = rgb(0., 0., 0.);
+  pub const RED: Self = rgb(1., 0., 0.);
+  pub const GREEN: Self = rgb(0., 1., 0.);
+  pub const BLUE: Self = rgb(0., 0., 1.);
+  pub const WHITE: Self = rgb(1., 1., 1.);
+}
+
 impl PartialEq for Color {
   #[inline]
   fn eq(&self, other: &Self) -> bool {
