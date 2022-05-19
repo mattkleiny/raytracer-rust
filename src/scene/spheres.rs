@@ -18,6 +18,11 @@ impl Sphere {
 
     Self { transform: translation * matrix }
   }
+
+  /// Sets the transform for this sphere.
+  pub fn set_transform(&mut self, transform: Matrix4x4) {
+    self.transform = transform;
+  }
 }
 
 impl Object for Sphere {

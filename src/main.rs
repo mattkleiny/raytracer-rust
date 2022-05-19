@@ -11,19 +11,25 @@ mod scene;
 
 fn main() {
   use maths::*;
+  use scene::*;
 
   let mut canvas = graphics::Canvas::new(256, 256);
 
-  // lets paint a clock!
-  let radius = (3. / 8.) * canvas.width() as f32;
-  let origin = point(canvas.width() as f32 / 2., canvas.height() as f32 / 2., 0.);
-  let twelve = point(0., 1., 0.);
+  // lets render a simple scene
+  let origin = point(0., 0., -5.);
+  let sphere = Sphere::new(point(0., 0., 0.), 1.25);
 
-  for i in 0..12 {
-    let rotation = Matrix4x4::rotate_z(i as f32 * std::f32::consts::PI / 6.);
-    let position = origin + (rotation * twelve) * radius;
+  for y in 0..canvas.height() {
+    for x in 0..canvas.width() {
+      let direction = vec(x as f32 / canvas.width() as f32 - 0.5, y as f32 / canvas.height() as f32 - 0.5, 1.);
+      let ray = Ray::new(origin, direction);
 
-    canvas.set_pixel(position.x as usize, position.y as usize, Color::WHITE);
+      let set = sphere.intersect(ray);
+
+      if let Some(_) = set.closest_hit() {
+        canvas.set_pixel(x, y, Color::RED);
+      }
+    }
   }
 
   canvas.save_to_png("./output.png").expect("Failed to save PNG file!");
