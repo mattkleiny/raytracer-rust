@@ -2,17 +2,21 @@
 
 use std::ops::{Deref, DerefMut};
 
+pub use lights::*;
 pub use spheres::*;
 
-use crate::maths::Ray;
+use crate::maths::{Ray, Tuple};
 
+mod lights;
 mod spheres;
-
 
 /// Allows an object to calculate intersection information with a Ray.
 pub trait Object {
   /// Calculates the distances of intersection for the given ray.
   fn intersect(&self, ray: Ray) -> IntersectSet;
+
+  /// Computes the normal vector at a given world point on the surface of the object.
+  fn normal_at(&self, world_point: Tuple) -> Tuple;
 }
 
 /// A set of intersections for a particular object.K

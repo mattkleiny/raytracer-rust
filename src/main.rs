@@ -21,7 +21,11 @@ fn main() {
 
   for y in 0..canvas.height() {
     for x in 0..canvas.width() {
-      let direction = vec(x as f32 / canvas.width() as f32 - 0.5, y as f32 / canvas.height() as f32 - 0.5, 1.);
+      let direction = vec(
+        x as f32 / canvas.width() as f32 - 0.5,
+        y as f32 / canvas.height() as f32 - 0.5,
+        1.,
+      );
       let ray = Ray::new(origin, direction);
 
       let set = sphere.intersect(ray);

@@ -1,6 +1,6 @@
 //! Sphere objects for use in scene rendering.
 
-use crate::maths::{Matrix4x4, point, Ray, Tuple};
+use crate::maths::{Matrix4x4, point, Ray, Tuple, vec};
 
 use super::{IntersectSet, Object};
 
@@ -46,6 +46,20 @@ impl Object for Sphere {
     }
 
     results
+  }
+
+  fn normal_at(&self, world_point: Tuple) -> Tuple {
+    if let Ok(inverse_transform) = self.transform.invert() {
+      let object_point = inverse_transform * world_point;
+      let object_normal = object_point - point(0., 0., 0.);
+      let mut world_normal = inverse_transform.transpose() * object_normal;
+
+      world_normal.w = 0.;
+
+      world_normal.normalize()
+    }else {
+      vec(0., 0., 0.)
+    }
   }
 }
 
@@ -140,5 +154,70 @@ mod tests {
     let set = sphere.intersect(ray);
 
     assert_eq!(set.len(), 0);
+  }
+
+  #[test]
+  fn normal_on_sphere_on_x_axis() {
+    let sphere = Sphere::new(point(0., 0., 0.), 1.);
+    let normal = sphere.normal_at(point(1., 0., 0.));
+
+    assert_eq!(normal, vec(1., 0., 0.));
+  }
+
+  #[test]
+  fn normal_on_sphere_on_y_axis() {
+    let sphere = Sphere::new(point(0., 0., 0.), 1.);
+    let normal = sphere.normal_at(point(0., 1., 0.));
+
+    assert_eq!(normal, vec(0., 1., 0.));
+  }
+
+  #[test]
+  fn normal_on_sphere_on_z_axis() {
+    let sphere = Sphere::new(point(0., 0., 0.), 1.);
+    let normal = sphere.normal_at(point(0., 0., 1.));
+
+    assert_eq!(normal, vec(0., 0., 1.));
+  }
+
+  #[test]
+  fn normal_on_sphere_at_non_axial_point() {
+    let sphere = Sphere::new(point(0., 0., 0.), 1.);
+    let point = point(3f32.sqrt() / 3., 3f32.sqrt() / 3., 3f32.sqrt() / 3.);
+    let normal = sphere.normal_at(point);
+
+    assert_eq!(normal, vec(3f32.sqrt() / 3., 3f32.sqrt() / 3., 3f32.sqrt() / 3.));
+  }
+
+  #[test]
+  fn normal_on_sphere_is_normalised() {
+    let sphere = Sphere::new(point(0., 0., 0.), 1.);
+    let point = point(3f32.sqrt() / 3., 3f32.sqrt() / 3., 3f32.sqrt() / 3.);
+    let normal = sphere.normal_at(point);
+
+    assert_eq!(normal.normalize(), normal);
+  }
+
+  #[test]
+  fn normal_on_translated_sphere() {
+    let sphere = Sphere::new(point(0., 1., 0.), 1.);
+    let normal = sphere.normal_at(point(0., 1.70711, -0.70711));
+
+    assert_eq!(normal, vec(0., 0.70711, -0.70711));
+  }
+
+  #[test]
+  fn normal_on_transformed_sphere() {
+    let mut sphere = Sphere::new(point(0., 0., 0.), 1.);
+
+    let transform =
+        Matrix4x4::scale(1., 0.5, 1.) *
+            Matrix4x4::rotate_z(std::f32::consts::PI / 5.);
+
+    sphere.set_transform(transform);
+
+    let normal = sphere.normal_at(point(0., 2f32.sqrt() / 2., -2f32.sqrt() / 2.));
+
+    assert_eq!(normal, vec(0., 0.97014, -0.24254));
   }
 }
