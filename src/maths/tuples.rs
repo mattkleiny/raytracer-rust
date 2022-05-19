@@ -2,6 +2,8 @@
 
 use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
+use crate::maths::Matrix4x4;
+
 use super::ApproxEq;
 
 pub type Point = Tuple;
@@ -203,6 +205,26 @@ impl Div<f32> for Tuple {
       z: self.z / rhs,
       w: self.w / rhs,
     }
+  }
+}
+
+impl Mul<Tuple> for Matrix4x4 {
+  type Output = Tuple;
+
+  /// Transforms a tuple by a 4x4 matrix.
+  fn mul(self, rhs: Tuple) -> Self::Output {
+    let mut result = tuple(0., 0., 0., 0.);
+
+    for row in 0..4 {
+      let x = self[(row, 0)] * rhs.x;
+      let y = self[(row, 1)] * rhs.y;
+      let z = self[(row, 2)] * rhs.z;
+      let w = self[(row, 3)] * rhs.w;
+
+      result[row] = x + y + z + w;
+    }
+
+    result
   }
 }
 

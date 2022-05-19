@@ -1,5 +1,9 @@
 //! Ray types and arithmetic.
 
+use std::ops::Mul;
+
+use crate::maths::Matrix4x4;
+
 use super::Tuple;
 
 /// A ray is a line segment in 3-space with a starting point and a direction.
@@ -25,9 +29,21 @@ impl Ray {
   }
 }
 
+impl Mul<Ray> for Matrix4x4 {
+  type Output = Ray;
+
+  /// Transforms a ray by a 4x4 matrix.
+  fn mul(self, rhs: Ray) -> Self::Output {
+    Ray {
+      origin: self * rhs.origin,
+      direction: self * rhs.direction,
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
-  use crate::maths::{point, Ray, vec};
+  use crate::maths::{Matrix4x4, point, Ray, vec};
 
   #[test]
   fn ray_should_expose_basic_properties() {
@@ -51,5 +67,27 @@ mod tests {
     assert_eq!(ray.position(1.), point(3., 3., 4.));
     assert_eq!(ray.position(-1.), point(1., 3., 4.));
     assert_eq!(ray.position(2.5), point(4.5, 3., 4.));
+  }
+
+  #[test]
+  fn ray_should_translate() {
+    let ray = Ray::new(point(1., 2., 3.), vec(0., 1., 0.));
+    let transform = Matrix4x4::translate(3., 4., 5.);
+
+    let translated_ray = transform * ray;
+
+    assert_eq!(translated_ray.origin, point(4., 6., 8.));
+    assert_eq!(translated_ray.direction, vec(0., 1., 0.));
+  }
+
+  #[test]
+  fn ray_should_scale() {
+    let ray = Ray::new(point(1., 2., 3.), vec(0., 1., 0.));
+    let transform = Matrix4x4::scale(2., 3., 4.);
+
+    let scaled_ray = transform * ray;
+
+    assert_eq!(scaled_ray.origin, point(2., 6., 12.));
+    assert_eq!(scaled_ray.direction, vec(0., 3., 0.));
   }
 }

@@ -3,7 +3,7 @@
 use std::fmt::{Debug, Formatter};
 use std::ops::{Index, IndexMut, Mul};
 
-use super::{ApproxEq, tuple, Tuple};
+use super::ApproxEq;
 
 pub type Matrix2x2 = Matrix<2, 4>;
 pub type Matrix3x3 = Matrix<3, 9>;
@@ -88,7 +88,7 @@ impl<const S: usize, const L: usize> PartialEq for Matrix<S, L> {
   /// Standard per-element equality.
   fn eq(&self, other: &Self) -> bool {
     for i in 0..self.elements.len() {
-    if !self.elements[i].is_approx(other.elements[i]) {
+      if !self.elements[i].is_approx(other.elements[i]) {
         return false;
       }
     }
@@ -113,26 +113,6 @@ impl<const S: usize, const L: usize> Mul for Matrix<S, L> {
 
         result[(row, column)] = sum;
       }
-    }
-
-    result
-  }
-}
-
-impl Mul<Tuple> for Matrix4x4 {
-  type Output = Tuple;
-
-  /// Multiplies a 4x4 matrix by a tuple.
-  fn mul(self, rhs: Tuple) -> Self::Output {
-    let mut result = tuple(0., 0., 0., 0.);
-
-    for row in 0..4 {
-      let x = self[(row, 0)] * rhs.x;
-      let y = self[(row, 1)] * rhs.y;
-      let z = self[(row, 2)] * rhs.z;
-      let w = self[(row, 3)] * rhs.w;
-
-      result[row] = x + y + z + w;
     }
 
     result
@@ -306,7 +286,6 @@ impl Matrix2x2 {
   ///
   /// A determinant 'determines' whether a system has a solution.
   pub fn determinant(&self) -> f32 {
-    // TODO: make this work across all dimensions.
     let [a, b, c, d] = self.elements;
 
     a * d - b * c
@@ -315,6 +294,8 @@ impl Matrix2x2 {
 
 #[cfg(test)]
 mod tests {
+  use crate::maths::tuple;
+
   use super::*;
 
   #[test]
