@@ -1,9 +1,11 @@
 //! Standard mathematics and related linear algebra for implementing our ray tracer.
 
 pub use colors::*;
+pub use matrices::*;
 pub use tuples::*;
 
 mod colors;
+mod matrices;
 mod tuples;
 
 const EPSILON: f32 = 0.00001;
