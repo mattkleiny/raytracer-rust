@@ -11,4 +11,5 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
+anyhow = "1.0.57"
 image = { version = "0.24.2", default-features = false, features = ["png"] }

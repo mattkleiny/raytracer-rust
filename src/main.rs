@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
-extern crate core;
+#[macro_use]
+extern crate anyhow;
 
 mod graphics;
 mod math;
