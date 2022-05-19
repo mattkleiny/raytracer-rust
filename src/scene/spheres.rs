@@ -1,6 +1,6 @@
 //! Sphere objects for use in scene rendering.
 
-use crate::maths::{Matrix4x4, point, Ray, Tuple, vec};
+use crate::maths::{Matrix4x4, point, Ray, Vector, vec3};
 
 use super::{IntersectSet, Object};
 
@@ -12,7 +12,7 @@ pub struct Sphere {
 
 impl Sphere {
   /// Creates a new sphere.
-  pub fn new(center: Tuple, radius: f32) -> Self {
+  pub fn new(center: Vector, radius: f32) -> Self {
     let translation = Matrix4x4::translate(center.x, center.y, center.z);
     let matrix = Matrix4x4::scale(radius, radius, radius);
 
@@ -33,9 +33,9 @@ impl Object for Sphere {
 
     let sphere_to_ray = ray.origin - point(0., 0., 0.);
 
-    let a = ray.direction.dot(&ray.direction);
-    let b = 2. * sphere_to_ray.dot(&ray.direction);
-    let c = sphere_to_ray.dot(&sphere_to_ray) - 1.;
+    let a = ray.direction.dot(ray.direction);
+    let b = 2. * sphere_to_ray.dot(ray.direction);
+    let c = sphere_to_ray.dot(sphere_to_ray) - 1.;
 
     let discriminant = b * b - 4. * a * c;
     let mut results = IntersectSet::new(self);
@@ -48,7 +48,7 @@ impl Object for Sphere {
     results
   }
 
-  fn normal_at(&self, world_point: Tuple) -> Tuple {
+  fn normal_at(&self, world_point: Vector) -> Vector {
     if let Ok(inverse_transform) = self.transform.invert() {
       let object_point = inverse_transform * world_point;
       let object_normal = object_point - point(0., 0., 0.);
@@ -58,20 +58,20 @@ impl Object for Sphere {
 
       world_normal.normalize()
     }else {
-      vec(0., 0., 0.)
+      vec3(0., 0., 0.)
     }
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{point, vec};
+  use crate::maths::{point, vec3};
 
   use super::*;
 
   #[test]
   fn ray_should_intersect_sphere() {
-    let ray = Ray::new(point(0., 0., -5.), vec(0., 0., 1.));
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
     let sphere = Sphere::new(point(0., 0., 0.), 1.);
 
     let set = sphere.intersect(ray);
@@ -83,7 +83,7 @@ mod tests {
 
   #[test]
   fn ray_should_intersect_sphere_at_tangent() {
-    let ray = Ray::new(point(0., 1., -5.), vec(0., 0., 1.));
+    let ray = Ray::new(point(0., 1., -5.), vec3(0., 0., 1.));
     let sphere = Sphere::new(point(0., 0., 0.), 1.);
 
     let set = sphere.intersect(ray);
@@ -95,7 +95,7 @@ mod tests {
 
   #[test]
   fn ray_should_miss_sphere() {
-    let ray = Ray::new(point(0., 2., -5.), vec(0., 0., 1.));
+    let ray = Ray::new(point(0., 2., -5.), vec3(0., 0., 1.));
     let sphere = Sphere::new(point(0., 0., 0.), 1.);
 
     let set = sphere.intersect(ray);
@@ -105,7 +105,7 @@ mod tests {
 
   #[test]
   fn ray_originates_inside_sphere() {
-    let ray = Ray::new(point(0., 0., 0.), vec(0., 0., 1.));
+    let ray = Ray::new(point(0., 0., 0.), vec3(0., 0., 1.));
     let sphere = Sphere::new(point(0., 0., 0.), 1.);
 
     let set = sphere.intersect(ray);
@@ -117,7 +117,7 @@ mod tests {
 
   #[test]
   fn ray_originates_in_front_of_sphere() {
-    let ray = Ray::new(point(0., 0., 5.), vec(0., 0., 1.));
+    let ray = Ray::new(point(0., 0., 5.), vec3(0., 0., 1.));
     let sphere = Sphere::new(point(0., 0., 0.), 1.);
 
     let set = sphere.intersect(ray);
@@ -136,7 +136,7 @@ mod tests {
 
   #[test]
   fn scaled_sphere_intersection_with_ray() {
-    let ray = Ray::new(point(0., 0., -5.), vec(0., 0., 1.));
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
     let sphere = Sphere::new(point(0., 0., 0.), 2.);
 
     let set = sphere.intersect(ray);
@@ -148,7 +148,7 @@ mod tests {
 
   #[test]
   fn translated_sphere_intersection_with_ray() {
-    let ray = Ray::new(point(0., 0., -5.), vec(0., 0., 1.));
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
     let sphere = Sphere::new(point(5., 0., 0.), 1.);
 
     let set = sphere.intersect(ray);
@@ -161,7 +161,7 @@ mod tests {
     let sphere = Sphere::new(point(0., 0., 0.), 1.);
     let normal = sphere.normal_at(point(1., 0., 0.));
 
-    assert_eq!(normal, vec(1., 0., 0.));
+    assert_eq!(normal, vec3(1., 0., 0.));
   }
 
   #[test]
@@ -169,7 +169,7 @@ mod tests {
     let sphere = Sphere::new(point(0., 0., 0.), 1.);
     let normal = sphere.normal_at(point(0., 1., 0.));
 
-    assert_eq!(normal, vec(0., 1., 0.));
+    assert_eq!(normal, vec3(0., 1., 0.));
   }
 
   #[test]
@@ -177,7 +177,7 @@ mod tests {
     let sphere = Sphere::new(point(0., 0., 0.), 1.);
     let normal = sphere.normal_at(point(0., 0., 1.));
 
-    assert_eq!(normal, vec(0., 0., 1.));
+    assert_eq!(normal, vec3(0., 0., 1.));
   }
 
   #[test]
@@ -186,7 +186,7 @@ mod tests {
     let point = point(3f32.sqrt() / 3., 3f32.sqrt() / 3., 3f32.sqrt() / 3.);
     let normal = sphere.normal_at(point);
 
-    assert_eq!(normal, vec(3f32.sqrt() / 3., 3f32.sqrt() / 3., 3f32.sqrt() / 3.));
+    assert_eq!(normal, vec3(3f32.sqrt() / 3., 3f32.sqrt() / 3., 3f32.sqrt() / 3.));
   }
 
   #[test]
@@ -203,7 +203,7 @@ mod tests {
     let sphere = Sphere::new(point(0., 1., 0.), 1.);
     let normal = sphere.normal_at(point(0., 1.70711, -0.70711));
 
-    assert_eq!(normal, vec(0., 0.70711, -0.70711));
+    assert_eq!(normal, vec3(0., 0.70711, -0.70711));
   }
 
   #[test]
@@ -218,6 +218,6 @@ mod tests {
 
     let normal = sphere.normal_at(point(0., 2f32.sqrt() / 2., -2f32.sqrt() / 2.));
 
-    assert_eq!(normal, vec(0., 0.97014, -0.24254));
+    assert_eq!(normal, vec3(0., 0.97014, -0.24254));
   }
 }

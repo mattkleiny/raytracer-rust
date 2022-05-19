@@ -5,7 +5,6 @@ use std::ops::{Add, Mul, Sub};
 use super::ApproxEq;
 
 /// Creates a new color with the given RGB values.
-#[inline]
 pub const fn rgb(r: f32, g: f32, b: f32) -> Color {
   Color { r, g, b }
 }
@@ -27,7 +26,6 @@ impl Color {
 }
 
 impl PartialEq for Color {
-  #[inline]
   fn eq(&self, other: &Self) -> bool {
     // equality for colors is approximate by default for the floating point fields.
     let r = self.r.is_approx(other.r);
@@ -41,7 +39,6 @@ impl PartialEq for Color {
 impl Add for Color {
   type Output = Self;
 
-  #[inline]
   fn add(self, rhs: Self) -> Self::Output {
     Self {
       r: self.r + rhs.r,
@@ -54,7 +51,6 @@ impl Add for Color {
 impl Sub for Color {
   type Output = Self;
 
-  #[inline]
   fn sub(self, rhs: Self) -> Self::Output {
     Self {
       r: self.r - rhs.r,
@@ -67,7 +63,6 @@ impl Sub for Color {
 impl Mul for Color {
   type Output = Self;
 
-  #[inline]
   fn mul(self, rhs: Self) -> Self::Output {
     Self {
       r: self.r * rhs.r,
@@ -80,7 +75,6 @@ impl Mul for Color {
 impl Mul<f32> for Color {
   type Output = Self;
 
-  #[inline]
   fn mul(self, rhs: f32) -> Self::Output {
     Self {
       r: self.r * rhs,
@@ -95,7 +89,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn colors_are_red_green_blue_tuples() {
+  fn red_green_blue_tuples() {
     let color = rgb(-0.5, 0.4, 1.7);
 
     assert_eq!(color.r, -0.5);

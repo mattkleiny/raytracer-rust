@@ -22,13 +22,11 @@ impl Canvas {
   }
 
   /// The width of the canvas in pixels.
-  #[inline]
   pub fn width(&self) -> usize {
     self.width as usize
   }
 
   /// The height of the canvas in pixels.
-  #[inline]
   pub fn height(&self) -> usize {
     self.height as usize
   }
@@ -49,7 +47,6 @@ impl Canvas {
   }
 
   /// Accesses the pixels as a slice of colors.
-  #[inline]
   pub fn as_slice(&self) -> &[Color] {
     &self.pixels
   }

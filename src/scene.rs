@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 pub use lights::*;
 pub use spheres::*;
 
-use crate::maths::{Ray, Tuple};
+use crate::maths::{Ray, Vector};
 
 mod lights;
 mod spheres;
@@ -16,7 +16,7 @@ pub trait Object {
   fn intersect(&self, ray: Ray) -> IntersectSet;
 
   /// Computes the normal vector at a given world point on the surface of the object.
-  fn normal_at(&self, world_point: Tuple) -> Tuple;
+  fn normal_at(&self, world_point: Vector) -> Vector;
 }
 
 /// A set of intersections for a particular object.K

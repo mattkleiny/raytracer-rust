@@ -66,7 +66,7 @@ impl Matrix4x4 {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{point, vec};
+  use crate::maths::{point, vec3};
 
   use super::*;
 
@@ -91,7 +91,7 @@ mod tests {
   #[test]
   fn translation_does_not_affect_vectors() {
     let transform = Matrix4x4::translate(5.0, -3.0, 2.0);
-    let v = vec(3.0, 4.0, 5.0);
+    let v = vec3(3.0, 4.0, 5.0);
 
     assert_eq!(transform * v, v);
   }
@@ -107,9 +107,9 @@ mod tests {
   #[test]
   fn scale_should_transform_vector() {
     let transform = Matrix4x4::scale(2., 3., 4.);
-    let p = vec(-4., 6., 8.);
+    let p = vec3(-4., 6., 8.);
 
-    assert_eq!(transform * p, vec(-8., 18., 32.));
+    assert_eq!(transform * p, vec3(-8., 18., 32.));
   }
 
   #[test]

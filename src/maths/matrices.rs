@@ -68,7 +68,6 @@ impl<const S: usize, const L: usize> Index<(usize, usize)> for Matrix<S, L> {
   /// Accesses a single element of the matrix.
   ///
   /// N.B: This is column-major order.
-  #[inline]
   fn index(&self, (row, column): (usize, usize)) -> &Self::Output {
     &self.elements[column + row * S]
   }
@@ -78,7 +77,6 @@ impl<const S: usize, const L: usize> IndexMut<(usize, usize)> for Matrix<S, L> {
   /// Mutably accesses a single element of the matrix.
   ///
   /// N.B: This is column-major order.
-  #[inline]
   fn index_mut(&mut self, (row, column): (usize, usize)) -> &mut Self::Output {
     &mut self.elements[column + row * S]
   }
@@ -294,7 +292,7 @@ impl Matrix2x2 {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::tuple;
+  use crate::maths::vec4;
 
   use super::*;
 
@@ -409,9 +407,9 @@ mod tests {
       0., 0., 0., 1.,
     ]);
 
-    let result = a * tuple(1., 2., 3., 1.);
+    let result = a * vec4(1., 2., 3., 1.);
 
-    assert_eq!(result, tuple(18., 24., 33., 1.));
+    assert_eq!(result, vec4(18., 24., 33., 1.));
   }
 
   #[test]
@@ -428,7 +426,7 @@ mod tests {
 
   #[test]
   fn matrix_multiplication_by_tuple_should_be_inert() {
-    let a = tuple(1., 2., 3., 4.);
+    let a = vec4(1., 2., 3., 4.);
 
     assert_eq!(Matrix4x4::IDENTITY * a, a);
   }

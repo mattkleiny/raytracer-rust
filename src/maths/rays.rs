@@ -4,19 +4,18 @@ use std::ops::Mul;
 
 use crate::maths::Matrix4x4;
 
-use super::Tuple;
+use super::Vector;
 
 /// A ray is a line segment in 3-space with a starting point and a direction.
 #[derive(Copy, Clone, Debug)]
 pub struct Ray {
-  pub origin: Tuple,
-  pub direction: Tuple,
+  pub origin: Vector,
+  pub direction: Vector,
 }
 
 impl Ray {
   /// Creates a new ray.
-  #[inline]
-  pub fn new(origin: Tuple, direction: Tuple) -> Self {
+  pub fn new(origin: Vector, direction: Vector) -> Self {
     Self {
       origin,
       direction,
@@ -24,7 +23,7 @@ impl Ray {
   }
 
   /// Computes the position of the ray at a given distance from it's origin.
-  pub fn position(&self, distance: f32) -> Tuple {
+  pub fn position(&self, distance: f32) -> Vector {
     self.origin + self.direction * distance
   }
 }
@@ -43,12 +42,12 @@ impl Mul<Ray> for Matrix4x4 {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{Matrix4x4, point, Ray, vec};
+  use crate::maths::{Matrix4x4, point, Ray, vec3};
 
   #[test]
   fn ray_should_expose_basic_properties() {
     let origin = point(1., 2., 3.);
-    let direction = vec(4., 5., 6.);
+    let direction = vec3(4., 5., 6.);
 
     let ray = Ray::new(origin, direction);
 
@@ -59,7 +58,7 @@ mod tests {
   #[test]
   fn ray_should_compute_position() {
     let origin = point(2., 3., 4.);
-    let direction = vec(1., 0., 0.);
+    let direction = vec3(1., 0., 0.);
 
     let ray = Ray::new(origin, direction);
 
@@ -71,23 +70,23 @@ mod tests {
 
   #[test]
   fn ray_should_translate() {
-    let ray = Ray::new(point(1., 2., 3.), vec(0., 1., 0.));
+    let ray = Ray::new(point(1., 2., 3.), vec3(0., 1., 0.));
     let transform = Matrix4x4::translate(3., 4., 5.);
 
     let translated_ray = transform * ray;
 
     assert_eq!(translated_ray.origin, point(4., 6., 8.));
-    assert_eq!(translated_ray.direction, vec(0., 1., 0.));
+    assert_eq!(translated_ray.direction, vec3(0., 1., 0.));
   }
 
   #[test]
   fn ray_should_scale() {
-    let ray = Ray::new(point(1., 2., 3.), vec(0., 1., 0.));
+    let ray = Ray::new(point(1., 2., 3.), vec3(0., 1., 0.));
     let transform = Matrix4x4::scale(2., 3., 4.);
 
     let scaled_ray = transform * ray;
 
     assert_eq!(scaled_ray.origin, point(2., 6., 12.));
-    assert_eq!(scaled_ray.direction, vec(0., 3., 0.));
+    assert_eq!(scaled_ray.direction, vec3(0., 3., 0.));
   }
 }
