@@ -103,13 +103,6 @@ impl PartialEq for Tuple {
   }
 }
 
-impl ApproxEq for Tuple {
-  #[inline]
-  fn is_approx(&self, rhs: Self) -> bool {
-    *self == rhs // approximate equality by default
-  }
-}
-
 impl Neg for Tuple {
   type Output = Self;
 

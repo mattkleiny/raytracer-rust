@@ -38,13 +38,6 @@ impl PartialEq for Color {
   }
 }
 
-impl ApproxEq for Color {
-  #[inline]
-  fn is_approx(&self, rhs: Self) -> bool {
-    *self == rhs // approximate equality by default
-  }
-}
-
 impl Add for Color {
   type Output = Self;
 
