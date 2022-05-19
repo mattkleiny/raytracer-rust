@@ -16,22 +16,38 @@ fn main() {
   let mut canvas = graphics::Canvas::new(256, 256);
 
   // lets render a simple scene
-  let origin = point(0., 0., -5.);
-  let sphere = Sphere::new(point(0., 0., 0.), 1.25);
+  let light = PointLight::new(vec3(-10., 10., -10.), rgb(1., 1., 1.));
+  let sphere = Sphere::new(point(0., 0., 0.), 1.25)
+      .with_material(Material {
+        color: rgb(1., 0.2, 1.),
+        ..Material::default()
+      });
 
   for y in 0..canvas.height() {
     for x in 0..canvas.width() {
+      let point = point(0., 0., -5.);
       let direction = vec3(
         x as f32 / canvas.width() as f32 - 0.5,
         y as f32 / canvas.height() as f32 - 0.5,
         1.,
-      );
-      let ray = Ray::new(origin, direction);
+      ).normalize();
 
-      let set = sphere.intersect(ray);
+      let ray = Ray::new(point, direction);
 
-      if let Some(_) = set.closest_hit() {
-        canvas.set_pixel(x, y, Color::RED);
+      if let Some(distance) = sphere.intersect(ray).closest_hit() {
+        let hit_position = ray.position(distance);
+        let hit_normal = sphere.normal_at(hit_position);
+        let eye = -ray.direction;
+
+        let color = phong_lighting(
+          &sphere.material(),
+          &light,
+          hit_position,
+          hit_normal,
+          eye,
+        );
+
+        canvas.set_pixel(x, y, color);
       }
     }
   }

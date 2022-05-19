@@ -124,7 +124,7 @@ mod tests {
   }
 
   #[test]
-  fn phone_lighting_with_light_behind_the_surface() {
+  fn phong_lighting_with_light_behind_the_surface() {
     let material = Material::default();
     let position = vec3(0., 0., 0.);
 

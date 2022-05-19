@@ -89,7 +89,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn red_green_blue_tuples() {
+  fn color_should_create_red_green_blue_tuples() {
     let color = rgb(-0.5, 0.4, 1.7);
 
     assert_eq!(color.r, -0.5);
