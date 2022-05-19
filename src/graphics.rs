@@ -1,6 +1,6 @@
 use image::{ImageBuffer, ImageFormat, ImageResult, Rgba, RgbaImage};
 
-use crate::math::Color;
+use crate::maths::Color;
 
 /// A canvas is a 2D array of pixels that can be drawn to.
 pub struct Canvas {

@@ -2,11 +2,13 @@
 
 pub use colors::*;
 pub use matrices::*;
+pub use rays::*;
 pub use transforms::*;
 pub use tuples::*;
 
 mod colors;
 mod matrices;
+mod rays;
 mod transforms;
 mod tuples;
 

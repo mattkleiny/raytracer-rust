@@ -1,6 +1,6 @@
 //! Transformations for vectors and matrices.
 
-use super::{Matrix4x4, point, vec};
+use super::Matrix4x4;
 
 impl Matrix4x4 {
   /// Creates a new translation matrix.
@@ -66,6 +66,8 @@ impl Matrix4x4 {
 
 #[cfg(test)]
 mod tests {
+  use crate::maths::{point, vec};
+
   use super::*;
 
   #[test]

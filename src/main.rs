@@ -4,10 +4,11 @@
 extern crate anyhow;
 
 mod graphics;
-mod math;
+mod maths;
+mod scene;
 
 fn main() {
-  use math::*;
+  use maths::*;
 
   let mut canvas = graphics::Canvas::new(256, 256);
 
