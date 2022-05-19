@@ -1,13 +1,15 @@
 //! Sphere objects for use in scene rendering.
 
-use crate::maths::{Matrix4x4, point, Ray, Vector, vec3};
+use crate::maths::{Matrix4x4, point, Ray, vec3, Vector};
+use crate::scene::Material;
 
 use super::{IntersectSet, Object};
 
 /// A sphere in 3-space.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Sphere {
   transform: Matrix4x4,
+  material: Material,
 }
 
 impl Sphere {
@@ -16,16 +18,28 @@ impl Sphere {
     let translation = Matrix4x4::translate(center.x, center.y, center.z);
     let matrix = Matrix4x4::scale(radius, radius, radius);
 
-    Self { transform: translation * matrix }
+    Self {
+      transform: translation * matrix,
+      material: Material::default(),
+    }
   }
 
   /// Sets the transform for this sphere.
-  pub fn set_transform(&mut self, transform: Matrix4x4) {
-    self.transform = transform;
+  pub fn with_transform(self, transform: Matrix4x4) -> Self {
+    Self { transform, ..self }
+  }
+
+  /// Sets the material for this sphere.
+  pub fn with_material(self, material: Material) -> Self {
+    Self { material, ..self }
   }
 }
 
 impl Object for Sphere {
+  fn material(&self) -> &Material {
+    &self.material
+  }
+
   fn intersect(&self, mut ray: Ray) -> IntersectSet {
     if let Ok(inverse_transform) = self.transform.invert() {
       ray = inverse_transform * ray;
@@ -57,7 +71,7 @@ impl Object for Sphere {
       world_normal.w = 0.;
 
       world_normal.normalize()
-    }else {
+    } else {
       vec3(0., 0., 0.)
     }
   }
@@ -208,13 +222,8 @@ mod tests {
 
   #[test]
   fn normal_on_transformed_sphere() {
-    let mut sphere = Sphere::new(point(0., 0., 0.), 1.);
-
-    let transform =
-        Matrix4x4::scale(1., 0.5, 1.) *
-            Matrix4x4::rotate_z(std::f32::consts::PI / 5.);
-
-    sphere.set_transform(transform);
+    let sphere = Sphere::new(point(0., 0., 0.), 1.)
+        .with_transform(Matrix4x4::scale(1., 0.5, 1.) * Matrix4x4::rotate_z(std::f32::consts::PI / 5.));
 
     let normal = sphere.normal_at(point(0., 2f32.sqrt() / 2., -2f32.sqrt() / 2.));
 

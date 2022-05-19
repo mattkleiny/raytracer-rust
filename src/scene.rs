@@ -2,16 +2,21 @@
 
 use std::ops::{Deref, DerefMut};
 
-pub use lights::*;
+pub use lighting::*;
+pub use materials::*;
 pub use spheres::*;
 
 use crate::maths::{Ray, Vector};
 
-mod lights;
+mod lighting;
+mod materials;
 mod spheres;
 
 /// Allows an object to calculate intersection information with a Ray.
 pub trait Object {
+  /// Returns the material for the object.
+  fn material(&self) -> &Material;
+
   /// Calculates the distances of intersection for the given ray.
   fn intersect(&self, ray: Ray) -> IntersectSet;
 
@@ -21,7 +26,6 @@ pub trait Object {
 
 /// A set of intersections for a particular object.K
 pub struct IntersectSet<'a> {
-  // TODO: push this into individual intersections, instead?
   object: &'a dyn Object,
   hits: smallvec::SmallVec<[f32; 4]>,
 }
