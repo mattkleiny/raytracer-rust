@@ -142,6 +142,38 @@ impl Mul<Tuple> for Matrix4x4 {
   }
 }
 
+impl Matrix4x4 {
+  pub const IDENTITY: Self = Self::identity();
+
+  /// Constructs a new 4x4 identity matrix (1 along the left to right diagonal).
+  pub const fn identity() -> Self {
+    Self::from_elements(&[
+      1., 0., 0., 0.,
+      0., 1., 0., 0.,
+      0., 0., 1., 0.,
+      0., 0., 0., 1.,
+    ])
+  }
+}
+
+impl Matrix3x3 {
+  pub const IDENTITY: Self = Self::identity();
+
+  /// Constructs a new 3x3 identity matrix (1 along the left to right diagonal).
+  pub const fn identity() -> Self {
+    Self::from_elements(&[
+      1., 0., 0.,
+      0., 1., 0.,
+      0., 0., 1.,
+    ])
+  }
+
+  /// Computes the sub-matrix of this matrix by removing the given row and column.
+  pub fn submatrix(&self, row: usize, column: usize) -> Matrix2x2 {
+    todo!()
+  }
+}
+
 impl Matrix2x2 {
   pub const IDENTITY: Self = Self::identity();
 
@@ -165,33 +197,6 @@ impl Matrix2x2 {
     let d = self[(1, 1)];
 
     a * d - b * c
-  }
-}
-
-impl Matrix3x3 {
-  pub const IDENTITY: Self = Self::identity();
-
-  /// Constructs a new 3x3 identity matrix (1 along the left to right diagonal).
-  pub const fn identity() -> Self {
-    Self::from_elements(&[
-      1., 0., 0.,
-      0., 1., 0.,
-      0., 0., 1.,
-    ])
-  }
-}
-
-impl Matrix4x4 {
-  pub const IDENTITY: Self = Self::identity();
-
-  /// Constructs a new 4x4 identity matrix (1 along the left to right diagonal).
-  pub const fn identity() -> Self {
-    Self::from_elements(&[
-      1., 0., 0., 0.,
-      0., 1., 0., 0.,
-      0., 0., 1., 0.,
-      0., 0., 0., 1.,
-    ])
   }
 }
 
@@ -352,6 +357,11 @@ mod tests {
   }
 
   #[test]
+  fn matrix_transpose_of_identity_is_identity() {
+    assert_eq!(Matrix4x4::IDENTITY.transpose(), Matrix4x4::IDENTITY);
+  }
+
+  #[test]
   fn determinant_should_be_calculated_correctly() {
     let a = Matrix2x2::from_elements(&[
       1., 5.,
@@ -359,5 +369,19 @@ mod tests {
     ]);
 
     assert_eq!(a.determinant(), 17.);
+  }
+
+  #[test]
+  fn submatrix_of_3x3_is_valid_2x2() {
+    let a = Matrix3x3::from_elements(&[
+      1., 5., 0.,
+      -3., 2., 7.,
+      0., 6., -3.,
+    ]);
+
+    assert_eq!(a.submatrix(0, 2), Matrix2x2::from_elements(&[
+      -3., 2.,
+      0., 6.,
+    ]));
   }
 }
