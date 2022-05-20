@@ -4,18 +4,18 @@ use std::ops::Mul;
 
 use crate::maths::Matrix4x4;
 
-use super::Vector;
+use super::{Point, Vector};
 
 /// A ray is a line segment in 3-space with a starting point and a direction.
 #[derive(Copy, Clone, Debug)]
 pub struct Ray {
-  pub origin: Vector,
+  pub origin: Point,
   pub direction: Vector,
 }
 
 impl Ray {
   /// Creates a new ray.
-  pub fn new(origin: Vector, direction: Vector) -> Self {
+  pub fn new(origin: Point, direction: Vector) -> Self {
     Self {
       origin,
       direction,

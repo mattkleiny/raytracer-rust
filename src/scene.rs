@@ -58,9 +58,7 @@ impl Scene {
     }
 
     // sort results by distance in-place
-    results.sort_by(|a, b| {
-      a.distance.partial_cmp(&b.distance).unwrap()
-    });
+    results.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
 
     results
   }
@@ -145,7 +143,7 @@ impl<'a> DerefMut for IntersectionSet<'a> {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{rgb, vec3, Matrix4x4};
+  use crate::maths::{point, rgb, vec3, Matrix4x4};
 
   use super::*;
 
@@ -202,7 +200,7 @@ mod tests {
   #[test]
   fn intersect_scene_with_ray_should_return_all_intersections() {
     let scene = create_test_scene();
-    let ray = Ray::new(vec3(0., 0., -5.), vec3(0., 0., 1.));
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
 
     let set = scene.intersect(ray);
 
