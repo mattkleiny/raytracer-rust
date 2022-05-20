@@ -39,18 +39,17 @@ impl Scene {
     self.point_lights.push(light);
   }
 
-  /// Get the background color for the scene.
-  pub fn background_color(&self) -> Color {
-    self.background_color
-  }
-
-  /// Get the point lights for the scene.
-  pub fn point_lights(&self) -> &[PointLight] {
-    &self.point_lights
+  /// Computes the color of the scene at the given ray.
+  pub fn sample(&self, ray: Ray) -> Color {
+    if let Some(intersection) = self.intersect(ray).closest_hit() {
+      self.apply_lighting(ray, intersection)
+    } else {
+      self.background_color
+    }
   }
 
   /// Intersects the given ray with the entire scene.
-  pub fn intersect(&self, ray: Ray) -> IntersectionSet {
+  fn intersect(&self, ray: Ray) -> IntersectionSet {
     let mut results = IntersectionSet::new();
 
     for object in &self.objects {
@@ -58,9 +57,29 @@ impl Scene {
     }
 
     // sort results by distance in-place
-    results.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
+    results.sort_by(|a, b| {
+      a.distance.partial_cmp(&b.distance).unwrap()
+    });
 
     results
+  }
+
+  /// Applies lighting to the given intersection.
+  fn apply_lighting(&self, ray: Ray, intersection: Intersection) -> Color {
+    let mut color = self.background_color;
+    let lighting_data = calculate_lighting_data(&intersection, ray);
+
+    for light in &self.point_lights {
+      color = color + phong_lighting(
+        &lighting_data.object.material(),
+        light,
+        lighting_data.point,
+        lighting_data.eye,
+        lighting_data.normal,
+      );
+    }
+
+    color
   }
 }
 
@@ -143,7 +162,7 @@ impl<'a> DerefMut for IntersectionSet<'a> {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{point, rgb, vec3, Matrix4x4};
+  use crate::maths::{Matrix4x4, point, rgb, vec3};
 
   use super::*;
 
@@ -211,6 +230,55 @@ mod tests {
     assert_eq!(set[3].distance, 6.);
   }
 
+  #[test]
+  fn apply_lighting_to_an_intersection_from_outside() {
+    let scene = create_test_scene();
+
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
+    let object = scene.objects[0].deref();
+    let intersection = Intersection::new(object.deref(), 4.);
+
+    let color = scene.apply_lighting(ray, intersection);
+
+    assert_eq!(color, rgb(0.38012764, 0.47515953, 0.28509575));
+  }
+
+  #[test]
+  fn apply_lighting_to_an_intersection_from_inside() {
+    let mut scene = create_test_scene();
+    scene.point_lights[0] = PointLight::new(point(0., 0.25, 0.), rgb(1., 1., 1.));
+
+    let ray = Ray::new(point(0., 0., 0.), vec3(0., 0., 1.));
+    let object = scene.objects[1].deref();
+    let intersection = Intersection::new(object, 0.5);
+
+    let color = scene.apply_lighting(ray, intersection);
+
+    assert_eq!(color, rgb(0.90498, 0.90498, 0.90498));
+  }
+
+  #[test]
+  fn background_color_is_used_when_ray_misses() {
+    let mut scene = create_test_scene();
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 1., 0.));
+
+    scene.background_color = Color::RED;
+
+    let color = scene.sample(ray);
+
+    assert_eq!(color, Color::RED);
+  }
+
+  #[test]
+  fn color_of_material_is_used_when_ray_hits() {
+    let scene = create_test_scene();
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
+
+    let color = scene.sample(ray);
+
+    assert_eq!(color, rgb(0.38012764, 0.47515953, 0.28509575));
+  }
+
   /// Creates a default scene with two spheres a single light source.
   fn create_test_scene() -> Scene {
     let mut scene = Scene::new();
@@ -229,12 +297,6 @@ mod tests {
     scene.add_object(
       Sphere::new()
         .with_transform(Matrix4x4::scale(0.5, 0.5, 0.5))
-        .with_material(
-          Material::default()
-            .with_color(rgb(0.8, 1., 0.6))
-            .with_diffuse(0.7)
-            .with_specular(0.2),
-        ),
     );
 
     scene

@@ -39,25 +39,12 @@ fn main() {
         x as f32 / canvas.width() as f32 - 0.5,
         y as f32 / canvas.height() as f32 - 0.5,
         1.,
-      )
-      .normalize();
+      ).normalize();
 
       let ray = Ray::new(point, direction);
+      let color = scene.sample(ray);
 
-      if let Some(Intersection { object, distance }) = scene.intersect(ray).closest_hit() {
-        let hit_position = ray.position(distance);
-        let hit_normal = object.normal_at(hit_position);
-        let eye = -ray.direction;
-
-        let mut color = Color::BLACK;
-
-        for light in scene.point_lights() {
-          // TODO: mix lights appropriately?
-          color = phong_lighting(&object.material(), &light, hit_position, hit_normal, eye);
-        }
-
-        canvas.set_pixel(x, y, color);
-      };
+      canvas.set_pixel(x, canvas.height() - y, color);
     }
   }
 

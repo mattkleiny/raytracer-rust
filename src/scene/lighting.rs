@@ -1,7 +1,9 @@
 //! Light sources for scene rendering.
 
-use crate::maths::{Color, Vector};
+use crate::maths::{Color, Point, Ray, Vector};
 use crate::scene::Material;
+
+use super::{Intersection, SceneObject};
 
 /// A point light in the scene.
 #[derive(Clone, Debug)]
@@ -20,14 +22,36 @@ impl PointLight {
   }
 }
 
+/// Lighting data used in the phong model; computed from intersection information in the scene.
+pub struct LightingData<'a> {
+  pub object: &'a dyn SceneObject,
+  pub point: Point,
+  pub eye: Vector,
+  pub normal: Vector,
+  pub distance: f32,
+  pub inside: bool,
+}
+
+/// Pre-computes the lighting data used in the phong model.
+pub fn calculate_lighting_data<'a>(intersection: &'a Intersection, ray: Ray) -> LightingData<'a> {
+  let object = intersection.object;
+  let point = ray.position(intersection.distance);
+  let eye = -ray.direction;
+  let distance = intersection.distance;
+
+  let mut normal = object.normal_at(point);
+  let mut inside = false;
+
+  if normal.dot(eye) < 0. {
+    normal = -normal;
+    inside = true;
+  }
+
+  LightingData { object, point, eye, normal, inside, distance }
+}
+
 /// Computes lighting for a particular point in the scene via phong model.
-pub fn phong_lighting(
-  material: &Material,
-  light: &PointLight,
-  position: Vector,
-  eye: Vector,
-  normal: Vector,
-) -> Color {
+pub fn phong_lighting(material: &Material, light: &PointLight, position: Vector, eye: Vector, normal: Vector) -> Color {
   // combine surface color with the light color/intensity
   let effective_color = material.color * light.intensity;
 
@@ -61,7 +85,8 @@ pub fn phong_lighting(
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{rgb, vec3};
+  use crate::maths::{point, rgb, vec3};
+  use crate::scene::Sphere;
 
   use super::*;
 
@@ -141,5 +166,43 @@ mod tests {
     let result = phong_lighting(&material, &light, position, eye, normal);
 
     assert_eq!(result, rgb(0.1, 0.1, 0.1));
+  }
+
+  #[test]
+  fn calculate_lighting_data_for_an_intersection() {
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
+    let sphere = Sphere::new();
+    let intersection = Intersection::new(&sphere, 4.);
+
+    let data = calculate_lighting_data(&intersection, ray);
+
+    assert_eq!(data.point, point(0., 0., -1.));
+    assert_eq!(data.eye, vec3(0., 0., -1.));
+    assert_eq!(data.normal, vec3(0., 0., -1.));
+  }
+
+  #[test]
+  fn calculate_lighting_data_determines_outside() {
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
+    let sphere = Sphere::new();
+    let intersection = Intersection::new(&sphere, 4.);
+
+    let data = calculate_lighting_data(&intersection, ray);
+
+    assert_eq!(data.inside, false);
+  }
+
+  #[test]
+  fn calculate_lighting_data_determines_inside() {
+    let ray = Ray::new(point(0., 0., 0.), vec3(0., 0., 1.));
+    let sphere = Sphere::new();
+    let intersection = Intersection::new(&sphere, 1.);
+
+    let data = calculate_lighting_data(&intersection, ray);
+
+    assert_eq!(data.point, point(0., 0., 1.));
+    assert_eq!(data.eye, vec3(0., 0., -1.));
+    assert_eq!(data.normal, vec3(0., 0., -1.));
+    assert_eq!(data.inside, true);
   }
 }
