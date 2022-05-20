@@ -21,7 +21,13 @@ impl PointLight {
 }
 
 /// Computes lighting for a particular point in the scene via phong model.
-pub fn phong_lighting(material: &Material, light: &PointLight, position: Vector, eye: Vector, normal: Vector) -> Color {
+pub fn phong_lighting(
+  material: &Material,
+  light: &PointLight,
+  position: Vector,
+  eye: Vector,
+  normal: Vector,
+) -> Color {
   // combine surface color with the light color/intensity
   let effective_color = material.color * light.intensity;
 

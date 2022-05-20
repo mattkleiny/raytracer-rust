@@ -16,9 +16,10 @@ fn main() {
   let mut canvas = graphics::Canvas::new(256, 256);
 
   // lets render a simple scene
-  let light = PointLight::new(vec3(-10., 10., -10.), rgb(1., 1., 1.));
-  let sphere = Sphere::new()
-      .with_material(Material::default().with_color(rgb(1., 0.2, 1.)));
+  let mut scene = Scene::new();
+
+  scene.add_point_light(PointLight::new(vec3(-10., 10., -10.), rgb(1., 1., 1.)));
+  scene.add_object(Sphere::new().with_material(Material::default().with_color(rgb(1., 0.2, 1.))));
 
   for y in 0..canvas.height() {
     for x in 0..canvas.width() {
@@ -27,27 +28,35 @@ fn main() {
         x as f32 / canvas.width() as f32 - 0.5,
         y as f32 / canvas.height() as f32 - 0.5,
         1.,
-      ).normalize();
+      )
+      .normalize();
 
       let ray = Ray::new(point, direction);
 
-      if let Some(intersection) = sphere.intersect(ray).closest_hit() {
+      if let Some(intersection) = scene.intersect(ray).closest_hit() {
         let hit_position = ray.position(intersection.distance);
-        let hit_normal = sphere.normal_at(hit_position);
+        let hit_normal = intersection.object.normal_at(hit_position);
         let eye = -ray.direction;
 
-        let color = phong_lighting(
-          &intersection.object.material(),
-          &light,
-          hit_position,
-          hit_normal,
-          eye,
-        );
+        let mut color = Color::BLACK;
+
+        for light in scene.point_lights() {
+          // TODO: mix lights appropriately
+          color = phong_lighting(
+            &intersection.object.material(),
+            &light,
+            hit_position,
+            hit_normal,
+            eye,
+          );
+        }
 
         canvas.set_pixel(x, y, color);
       };
     }
   }
 
-  canvas.save_to_png("./output.png").expect("Failed to save PNG file!");
+  canvas
+    .save_to_png("./output.png")
+    .expect("Failed to save PNG file!");
 }

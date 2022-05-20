@@ -18,7 +18,7 @@ pub struct Scene {
   objects: Vec<Box<dyn SceneObject>>,
   point_lights: Vec<PointLight>,
 }
-
+  
 impl Scene {
   /// Create a new scene.
   pub fn new() -> Self {
@@ -37,6 +37,16 @@ impl Scene {
   /// Add a point light to the scene.
   pub fn add_point_light(&mut self, light: PointLight) {
     self.point_lights.push(light);
+  }
+
+  /// Get the background color for the scene.
+  pub fn background_color(&self) -> Color {
+    self.background_color
+  }
+
+  /// Get the point lights for the scene.
+  pub fn point_lights(&self) -> &[PointLight] {
+    &self.point_lights
   }
 
   /// Intersects the given ray with the entire scene.
