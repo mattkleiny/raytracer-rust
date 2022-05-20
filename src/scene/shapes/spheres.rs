@@ -1,86 +1,56 @@
 //! Sphere objects for use in scene rendering.
 
-use crate::maths::{Matrix4x4, point, Ray, vec3, Vector};
-use crate::scene::Material;
+use crate::maths::{Matrix4x4, point, Ray, Vector};
+use crate::scene::SceneNode;
 
-use super::{IntersectionSet, SceneObject};
+use super::Shape;
 
 /// A sphere in 3-space.
 #[derive(Clone, Debug)]
-pub struct Sphere {
-  transform: Matrix4x4,
-  material: Material,
-}
+pub struct Sphere;
 
 impl Sphere {
   /// Creates a new sphere.
-  pub fn new() -> Self {
-    Self {
-      transform: Matrix4x4::identity(),
-      material: Material::default(),
-    }
-  }
-
-  /// Sets the transform for this sphere.
-  pub fn with_transform(self, transform: Matrix4x4) -> Self {
-    Self {
-      transform: self.transform * transform,
-      ..self
-    }
-  }
-
-  /// Sets the material for this sphere.
-  pub fn with_material(self, material: Material) -> Self {
-    Self { material, ..self }
+  pub fn new() -> SceneNode<Sphere> {
+    SceneNode::new(Sphere)
   }
 }
 
-impl SceneObject for Sphere {
-  fn material(&self) -> &Material {
-    &self.material
-  }
-
-  fn intersect(&self, mut ray: Ray) -> IntersectionSet {
-    if let Ok(inverse_transform) = self.transform.invert() {
-      ray = inverse_transform * ray;
-    }
-
+impl Shape for Sphere {
+  fn intersect(&self, world_ray: Ray) -> Vec<f32> {
     // standard ray sphere intersection
-    let sphere_to_ray = ray.origin - point(0., 0., 0.);
+    let sphere_to_ray = world_ray.origin - point(0., 0., 0.);
 
-    let a = ray.direction.dot(ray.direction);
-    let b = 2. * sphere_to_ray.dot(ray.direction);
+    let a = world_ray.direction.dot(world_ray.direction);
+    let b = 2. * sphere_to_ray.dot(world_ray.direction);
     let c = sphere_to_ray.dot(sphere_to_ray) - 1.;
 
     let discriminant = b * b - 4. * a * c;
-    let mut results = IntersectionSet::new();
+    let mut results = Vec::new();
 
     if discriminant >= 0. {
-      results.push(self, (-b - discriminant.sqrt()) / (2. * a));
-      results.push(self, (-b + discriminant.sqrt()) / (2. * a));
+      results.push((-b - discriminant.sqrt()) / (2. * a));
+      results.push((-b + discriminant.sqrt()) / (2. * a));
     }
 
     results
   }
 
-  fn normal_at(&self, world_point: Vector) -> Vector {
-    if let Ok(inverse_transform) = self.transform.invert() {
-      let object_point = inverse_transform * world_point;
-      let object_normal = object_point - point(0., 0., 0.);
-      let mut world_normal = inverse_transform.transpose() * object_normal;
+  fn normal_at(&self, world_point: Vector, inverse_transform: Matrix4x4) -> Vector {
+    let object_point = inverse_transform * world_point;
+    let object_normal = object_point - point(0., 0., 0.);
+    let mut world_normal = inverse_transform.transpose() * object_normal;
 
-      world_normal.w = 0.;
+    world_normal.w = 0.;
 
-      world_normal.normalize()
-    } else {
-      vec3(0., 0., 0.)
-    }
+    world_normal.normalize()
   }
 }
 
 #[cfg(test)]
 mod tests {
   use crate::maths::{PI, point, vec3};
+  use crate::scene::SceneObject;
 
   use super::*;
 

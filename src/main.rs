@@ -19,7 +19,7 @@ fn main() {
 
   camera.transform = Matrix4x4::look_at(point(0., 1.5, -5.), point(0., 1., 0.), vec3(0., 1., 0.));
 
-  scene.add_point_light(PointLight::new(vec3(-10., 10., -10.), rgb(1., 1., 1.)));
+  scene.add_light(PointLight::new(vec3(-10., 10., -10.), rgb(1., 1., 1.)));
 
   // floor
   scene.add_object(

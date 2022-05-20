@@ -5,20 +5,89 @@ use std::ops::{Deref, DerefMut};
 pub use cameras::*;
 pub use lighting::*;
 pub use materials::*;
-pub use spheres::*;
+pub use shapes::*;
 
-use crate::maths::{Color, Point, Ray, Vector};
+use crate::maths::{Color, Matrix4x4, Point, Ray, vec3, Vector};
 
 mod cameras;
 mod lighting;
 mod materials;
-mod spheres;
+mod shapes;
+
+/// Allows an object to calculate intersection information with a Ray.
+pub trait SceneObject {
+  /// Returns the material for the object.
+  fn material(&self) -> &Material;
+
+  /// Calculates the distances of intersection for the given ray.
+  fn intersect(&self, world_ray: Ray) -> IntersectionSet;
+
+  /// Computes the normal vector at a given world point on the surface of the object.
+  fn normal_at(&self, world_point: Vector) -> Vector;
+}
+
+/// A node in the scene with material and transform.
+pub struct SceneNode<S> {
+  object: S,
+  material: Material,
+  transform: Matrix4x4,
+}
+
+impl<S> SceneNode<S> {
+  /// Creates a new node.
+  pub fn new(object: S) -> Self {
+    Self {
+      object,
+      transform: Matrix4x4::identity(),
+      material: Material::default(),
+    }
+  }
+
+  /// Sets the transform for this node.
+  pub fn with_transform(self, transform: Matrix4x4) -> Self {
+    Self {
+      transform: self.transform * transform,
+      ..self
+    }
+  }
+
+  /// Sets the material for this node.
+  pub fn with_material(self, material: Material) -> Self {
+    Self { material, ..self }
+  }
+}
+
+impl<S> SceneObject for SceneNode<S> where S: Shape {
+  fn material(&self) -> &Material {
+    &self.material
+  }
+
+  fn intersect(&self, world_ray: Ray) -> IntersectionSet {
+    let mut results = IntersectionSet::new();
+
+    if let Ok(inverse) = self.transform.invert() {
+      for distance in self.object.intersect(inverse * world_ray) {
+        results.push(self, distance);
+      }
+    }
+
+    results
+  }
+
+  fn normal_at(&self, world_point: Vector) -> Vector {
+    if let Ok(inverse) = self.transform.invert() {
+      self.object.normal_at(world_point, inverse)
+    } else {
+      vec3(0., 0., 0.)
+    }
+  }
+}
 
 /// A scene that can be rendered via ray tracing.
 pub struct Scene {
   background_color: Color,
-  objects: Vec<Box<dyn SceneObject>>,
-  point_lights: Vec<PointLight>,
+  nodes: Vec<Box<dyn SceneObject>>,
+  lights: Vec<PointLight>,
 }
 
 impl Scene {
@@ -26,19 +95,19 @@ impl Scene {
   pub fn new() -> Self {
     Self {
       background_color: Color::BLACK,
-      objects: Vec::new(),
-      point_lights: Vec::new(),
+      nodes: Vec::new(),
+      lights: Vec::new(),
     }
   }
 
   /// Add an object to the scene.
   pub fn add_object(&mut self, object: impl SceneObject + 'static) {
-    self.objects.push(Box::new(object));
+    self.nodes.push(Box::new(object));
   }
 
   /// Add a point light to the scene.
-  pub fn add_point_light(&mut self, light: PointLight) {
-    self.point_lights.push(light);
+  pub fn add_light(&mut self, light: PointLight) {
+    self.lights.push(light);
   }
 
   /// Computes the color of the scene at the given ray.
@@ -54,7 +123,7 @@ impl Scene {
   fn intersect(&self, ray: Ray) -> IntersectionSet {
     let mut results = IntersectionSet::new();
 
-    for object in &self.objects {
+    for object in &self.nodes {
       results.append(object.intersect(ray))
     }
 
@@ -66,13 +135,14 @@ impl Scene {
     results
   }
 
-  /// Applies lighting to the given intersection.
+  /// Calculates lighting for the given ray intersection.
   fn apply_lighting(&self, ray: Ray, intersection: Intersection) -> Color {
     let mut color = self.background_color;
+
     let lighting_data = calculate_lighting_data(&intersection, ray);
     let in_shadow = self.is_shadowed(lighting_data.over_point);
 
-    for light in &self.point_lights {
+    for light in &self.lights {
       color = color + phong_lighting(
         &lighting_data.object.material(),
         light,
@@ -88,7 +158,7 @@ impl Scene {
 
   /// Determines if the given point is in shadow.
   fn is_shadowed(&self, point: Point) -> bool {
-    for light in &self.point_lights {
+    for light in &self.lights {
       let light_vector = light.position - point;
 
       let distance = light_vector.magnitude();
@@ -107,19 +177,7 @@ impl Scene {
   }
 }
 
-/// Allows an object to calculate intersection information with a Ray.
-pub trait SceneObject {
-  /// Returns the material for the object.
-  fn material(&self) -> &Material;
-
-  /// Calculates the distances of intersection for the given ray.
-  fn intersect(&self, ray: Ray) -> IntersectionSet;
-
-  /// Computes the normal vector at a given world point on the surface of the object.
-  fn normal_at(&self, world_point: Vector) -> Vector;
-}
-
-/// A single intersection in an intersect set.
+/// A single intersection in an set.
 pub struct Intersection<'a> {
   pub object: &'a dyn SceneObject,
   pub distance: f32,
@@ -259,7 +317,7 @@ mod tests {
     let scene = create_test_scene();
 
     let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
-    let object = scene.objects[0].deref();
+    let object = scene.nodes[0].deref();
     let intersection = Intersection::new(object.deref(), 4.);
 
     let color = scene.apply_lighting(ray, intersection);
@@ -270,15 +328,15 @@ mod tests {
   #[test]
   fn apply_lighting_to_an_intersection_from_inside() {
     let mut scene = create_test_scene();
-    scene.point_lights[0] = PointLight::new(point(0., 0.25, 0.), rgb(1., 1., 1.));
+    scene.lights[0] = PointLight::new(point(0., 0.25, 0.), rgb(1., 1., 1.));
 
     let ray = Ray::new(point(0., 0., 0.), vec3(0., 0., 1.));
-    let object = scene.objects[1].deref();
+    let object = scene.nodes[1].deref();
     let intersection = Intersection::new(object, 0.5);
 
     let color = scene.apply_lighting(ray, intersection);
 
-    assert_eq!(color, rgb(0.90498, 0.90498, 0.90498));
+    assert_eq!(color, rgb(0.9049522, 0.9049522, 0.9049522));
   }
 
   #[test]
@@ -339,12 +397,12 @@ mod tests {
   fn apply_lighting_is_given_an_intersection_in_shadow() {
     let mut scene = Scene::new();
 
-    scene.add_point_light(PointLight::new(point(0., 0., -10.), rgb(1., 1., 1.)));
+    scene.add_light(PointLight::new(point(0., 0., -10.), rgb(1., 1., 1.)));
     scene.add_object(Sphere::new());
     scene.add_object(Sphere::new().with_transform(Matrix4x4::translate(0., 0., 10.)));
 
     let ray = Ray::new(point(0., 0., 5.), vec3(0., 0., 1.));
-    let intersection = Intersection::new(scene.objects[1].deref(), 4.);
+    let intersection = Intersection::new(scene.nodes[1].deref(), 4.);
 
     let color = scene.apply_lighting(ray, intersection);
 
@@ -355,7 +413,7 @@ mod tests {
   fn create_test_scene() -> Scene {
     let mut scene = Scene::new();
 
-    scene.add_point_light(PointLight::new(vec3(-10., 10., -10.), Color::WHITE));
+    scene.add_light(PointLight::new(vec3(-10., 10., -10.), Color::WHITE));
 
     scene.add_object(
       Sphere::new().with_material(
