@@ -1,5 +1,7 @@
 //! Standard mathematical tools.
 
+pub use std::f32::consts::PI as PI;
+
 pub use colors::*;
 pub use matrices::*;
 pub use rays::*;

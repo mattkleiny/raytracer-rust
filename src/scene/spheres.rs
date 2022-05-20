@@ -1,6 +1,6 @@
 //! Sphere objects for use in scene rendering.
 
-use crate::maths::{point, vec3, Matrix4x4, Ray, Vector};
+use crate::maths::{Matrix4x4, point, Ray, vec3, Vector};
 use crate::scene::Material;
 
 use super::{IntersectionSet, SceneObject};
@@ -80,7 +80,7 @@ impl SceneObject for Sphere {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{point, vec3};
+  use crate::maths::{PI, point, vec3};
 
   use super::*;
 
@@ -229,7 +229,7 @@ mod tests {
   fn normal_on_transformed_sphere() {
     let sphere = Sphere::new()
       .with_transform(Matrix4x4::scale(1., 0.5, 1.))
-      .with_transform(Matrix4x4::rotate_z(std::f32::consts::PI / 5.));
+      .with_transform(Matrix4x4::rotate_z(PI / 5.));
 
     let normal = sphere.normal_at(point(0., 2f32.sqrt() / 2., -2f32.sqrt() / 2.));
 

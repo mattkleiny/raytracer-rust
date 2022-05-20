@@ -2,12 +2,14 @@
 
 use std::ops::{Deref, DerefMut};
 
+pub use cameras::*;
 pub use lighting::*;
 pub use materials::*;
 pub use spheres::*;
 
 use crate::maths::{Color, Ray, Vector};
 
+mod cameras;
 mod lighting;
 mod materials;
 mod spheres;

@@ -84,7 +84,7 @@ impl Matrix4x4 {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{point, vec3};
+  use crate::maths::{PI, point, vec3};
 
   use super::*;
 
@@ -152,8 +152,8 @@ mod tests {
   fn rotate_around_x_axis() {
     let p = point(0., 1., 0.);
 
-    let half_quarter = Matrix4x4::rotate_x(std::f32::consts::PI / 4.);
-    let full_quarter = Matrix4x4::rotate_x(std::f32::consts::PI / 2.);
+    let half_quarter = Matrix4x4::rotate_x(PI / 4.);
+    let full_quarter = Matrix4x4::rotate_x(PI / 2.);
 
     assert_eq!(half_quarter * p, point(0., 2f32.sqrt() / 2., 2f32.sqrt() / 2.));
     assert_eq!(full_quarter * p, point(0., 0., 1.));
@@ -163,7 +163,7 @@ mod tests {
   fn inverse_rotate_around_x_axis() {
     let p = point(0., 1., 0.);
 
-    let half_quarter = Matrix4x4::rotate_x(std::f32::consts::PI / 4.);
+    let half_quarter = Matrix4x4::rotate_x(PI / 4.);
     let inverse = half_quarter.invert().expect("Failed to invert");
 
     assert_eq!(inverse * p, point(0., 2f32.sqrt() / 2., -2f32.sqrt() / 2.));
@@ -173,8 +173,8 @@ mod tests {
   fn rotate_around_y_axis() {
     let p = point(0., 0., 1.);
 
-    let half_quarter = Matrix4x4::rotate_y(std::f32::consts::PI / 4.);
-    let full_quarter = Matrix4x4::rotate_y(std::f32::consts::PI / 2.);
+    let half_quarter = Matrix4x4::rotate_y(PI / 4.);
+    let full_quarter = Matrix4x4::rotate_y(PI / 2.);
 
     assert_eq!(half_quarter * p, point(2f32.sqrt() / 2., 0., 2f32.sqrt() / 2.));
     assert_eq!(full_quarter * p, point(1., 0., 0.));
@@ -184,8 +184,8 @@ mod tests {
   fn rotate_around_z_axis() {
     let p = point(0., 1., 0.);
 
-    let half_quarter = Matrix4x4::rotate_z(std::f32::consts::PI / 4.);
-    let full_quarter = Matrix4x4::rotate_z(std::f32::consts::PI / 2.);
+    let half_quarter = Matrix4x4::rotate_z(PI / 4.);
+    let full_quarter = Matrix4x4::rotate_z(PI / 2.);
 
     assert_eq!(half_quarter * p, point(-2f32.sqrt() / 2., 2f32.sqrt() / 2., 0.));
     assert_eq!(full_quarter * p, point(-1., 0., 0.));
@@ -243,7 +243,7 @@ mod tests {
   fn individual_transforms_are_applied_in_sequence() {
     let p = point(1., 0., 1.);
 
-    let a = Matrix4x4::rotate_x(std::f32::consts::PI / 2.);
+    let a = Matrix4x4::rotate_x(PI / 2.);
     let b = Matrix4x4::scale(5., 5., 5.);
     let c = Matrix4x4::translate(10., 5., 7.);
 
@@ -261,7 +261,7 @@ mod tests {
   fn chained_transformations_are_applied_in_reverse_order() {
     let p = point(1., 0., 1.);
 
-    let a = Matrix4x4::rotate_x(std::f32::consts::PI / 2.);
+    let a = Matrix4x4::rotate_x(PI / 2.);
     let b = Matrix4x4::scale(5., 5., 5.);
     let c = Matrix4x4::translate(10., 5., 7.);
 
