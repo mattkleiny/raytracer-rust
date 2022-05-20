@@ -1,7 +1,5 @@
-FROM ubuntu:18.04
+# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.233.0/containers/rust/.devcontainer/base.Dockerfile
 
-WORKDIR /home/
-COPY . .
-RUN bash ./setup.sh
-
-ENV PATH="/root/.cargo/bin:$PATH"
+# [Choice] Debian OS version (use bullseye on local arm64/Apple Silicon): buster, bullseye
+ARG VARIANT="buster"
+FROM mcr.microsoft.com/vscode/devcontainers/rust:0-${VARIANT}
