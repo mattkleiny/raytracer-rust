@@ -14,23 +14,76 @@ fn main() {
   use scene::*;
 
   // lets render a simple scene
-  let mut camera = Camera::new(1920 / 2, 1080 / 2, PI / 2.);
+  let mut camera = Camera::new(1920 / 3, 1080 / 3, PI / 3.);
   let mut scene = Scene::new();
 
-  camera.transform = Matrix4x4::translate(0., 0., -5.);
+  camera.transform = Matrix4x4::look_at(point(0., 1.5, -5.), point(0., 1., 0.), vec3(0., 1., 0.));
 
-  scene.add_point_light(PointLight::new(vec3(-10., 10., 5.), rgb(1., 1., 1.)));
+  scene.add_point_light(PointLight::new(vec3(-10., 10., -10.), rgb(1., 1., 1.)));
 
+  // floor
   scene.add_object(
     Sphere::new()
-      .with_transform(Matrix4x4::translate(2., 0., 0.))
-      .with_material(Material::default().with_color(rgb(1., 0., 0.))),
+      .with_transform(Matrix4x4::scale(10., 0.01, 10.))
+      .with_material(Material::default()
+        .with_color(rgb(1., 0.9, 0.9))
+        .with_specular(0.)),
   );
 
+  // left wall
   scene.add_object(
     Sphere::new()
-      .with_transform(Matrix4x4::translate(-2., 0., 0.))
-      .with_material(Material::default().with_color(rgb(0., 1., 0.))),
+      .with_transform(Matrix4x4::translate(0., 0., 5.))
+      .with_transform(Matrix4x4::rotate_y(-PI / 4.))
+      .with_transform(Matrix4x4::rotate_x(PI / 2.))
+      .with_transform(Matrix4x4::scale(10., 0.01, 10.))
+      .with_material(Material::default()
+        .with_color(rgb(1., 0.9, 0.9))
+        .with_specular(0.)),
+  );
+
+  // right wall
+  scene.add_object(
+    Sphere::new()
+      .with_transform(Matrix4x4::translate(0., 0., 5.))
+      .with_transform(Matrix4x4::rotate_y(PI / 4.))
+      .with_transform(Matrix4x4::rotate_x(PI / 2.))
+      .with_transform(Matrix4x4::scale(10., 0.01, 10.))
+      .with_material(Material::default()
+        .with_color(rgb(1., 0.9, 0.9))
+        .with_specular(0.)),
+  );
+
+  // sphere 1
+  scene.add_object(
+    Sphere::new()
+      .with_transform(Matrix4x4::translate(-0.5, 1., 0.5))
+      .with_material(Material::default()
+        .with_color(rgb(0.1, 1., 0.5))
+        .with_diffuse(0.7)
+        .with_specular(0.3)),
+  );
+
+  // sphere 2
+  scene.add_object(
+    Sphere::new()
+      .with_transform(Matrix4x4::translate(1.5, 0.5, -0.5))
+      .with_transform(Matrix4x4::scale(0.5, 0.5, 0.5))
+      .with_material(Material::default()
+        .with_color(rgb(0.5, 1., 0.1))
+        .with_diffuse(0.7)
+        .with_specular(0.3)),
+  );
+
+  // sphere 3
+  scene.add_object(
+    Sphere::new()
+      .with_transform(Matrix4x4::translate(-1.5, 0.33, -0.75))
+      .with_transform(Matrix4x4::scale(0.33, 0.33, 0.33))
+      .with_material(Material::default()
+        .with_color(rgb(1., 0.8, 0.1))
+        .with_diffuse(0.7)
+        .with_specular(0.3)),
   );
 
   camera
