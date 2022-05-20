@@ -1,5 +1,7 @@
 //! Transformation matrices for vectors and points.
 
+use crate::maths::Vector;
+
 use super::Matrix4x4;
 
 impl Matrix4x4 {
@@ -61,6 +63,22 @@ impl Matrix4x4 {
       z1, z2, 1.0, 0.0,
       0.0, 0.0, 0.0, 1.0,
     ])
+  }
+
+  /// Creates a new view transformation that looks at the given point..
+  pub fn look_at(from: Vector, to: Vector, up: Vector) -> Self {
+    let forward = (to - from).normalize();
+    let left = forward.cross(up.normalize());
+    let true_up = left.cross(forward);
+
+    let orientation = Self::create(&[
+      left.x, left.y, left.z, 0.0,
+      true_up.x, true_up.y, true_up.z, 0.0,
+      -forward.x, -forward.y, -forward.z, 0.0,
+      0.0, 0.0, 0.0, 1.0,
+    ]);
+
+    orientation * Self::translate(-from.x, -from.y, -from.z)
   }
 }
 
@@ -250,5 +268,54 @@ mod tests {
     let transform = c * b * a;
 
     assert_eq!(transform * p, point(15., 0., 7.));
+  }
+
+  #[test]
+  fn look_at_default_orientation() {
+    let from = point(0., 0., 0.);
+    let to = point(0., 0., -1.);
+    let up = vec3(0., 1., 0.);
+
+    let transform = Matrix4x4::look_at(from, to, up);
+
+    assert_eq!(transform, Matrix4x4::IDENTITY);
+  }
+
+  #[test]
+  fn look_at_positive_z_direction() {
+    let from = point(0., 0., 0.);
+    let to = point(0., 0., 1.);
+    let up = vec3(0., 1., 0.);
+
+    let transform = Matrix4x4::look_at(from, to, up);
+
+    assert_eq!(transform, Matrix4x4::scale(-1., 1., -1.));
+  }
+
+  #[test]
+  fn look_at_moves_the_world() {
+    let from = point(0., 0., 8.);
+    let to = point(0., 0., 0.);
+    let up = vec3(0., 1., 0.);
+
+    let transform = Matrix4x4::look_at(from, to, up);
+
+    assert_eq!(transform, Matrix4x4::translate(0., 0., -8.));
+  }
+
+  #[test]
+  fn look_at_arbitrary_point() {
+    let from = point(1., 3., 2.);
+    let to = point(4., -2., 8.);
+    let up = vec3(1., 1., 0.);
+
+    let transform = Matrix4x4::look_at(from, to, up);
+
+    assert_eq!(transform, Matrix4x4::create(&[
+      -0.50709, 0.50709, 0.67612, -2.36643,
+      0.76772, 0.60609, 0.12122, -2.82843,
+      -0.35857, 0.59761, -0.71714, 0.00000,
+      0.000000, 0.00000, 0.00000, 1.00000
+    ]));
   }
 }

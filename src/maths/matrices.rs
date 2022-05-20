@@ -66,8 +66,6 @@ impl<const S: usize, const L: usize> Index<(usize, usize)> for Matrix<S, L> {
   type Output = f32;
 
   /// Accesses a single element of the matrix.
-  ///
-  /// N.B: This is column-major order.
   fn index(&self, (row, column): (usize, usize)) -> &Self::Output {
     &self.elements[column + row * S]
   }
@@ -75,8 +73,6 @@ impl<const S: usize, const L: usize> Index<(usize, usize)> for Matrix<S, L> {
 
 impl<const S: usize, const L: usize> IndexMut<(usize, usize)> for Matrix<S, L> {
   /// Mutably accesses a single element of the matrix.
-  ///
-  /// N.B: This is column-major order.
   fn index_mut(&mut self, (row, column): (usize, usize)) -> &mut Self::Output {
     &mut self.elements[column + row * S]
   }
