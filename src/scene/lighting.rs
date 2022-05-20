@@ -1,9 +1,7 @@
 //! Light sources for scene rendering.
 
 use crate::maths::{Color, Point, Ray, Vector};
-use crate::scene::Material;
-
-use super::{Intersection, SceneObject};
+use crate::scene::{Intersection, Material, Traceable};
 
 /// A point light in the scene.
 #[derive(Clone, Debug)]
@@ -24,7 +22,7 @@ impl PointLight {
 
 /// Lighting data used in the phong model; computed from intersection information in the scene.
 pub struct LightingData<'a> {
-  pub object: &'a dyn SceneObject,
+  pub object: &'a dyn Traceable,
   pub point: Point,
   pub over_point: Point,
   pub eye: Vector,
@@ -98,7 +96,7 @@ pub fn phong_lighting(material: &Material, light: &PointLight, position: Vector,
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{point, rgb, vec3, EPSILON, Matrix4x4};
+  use crate::maths::{EPSILON, Matrix4x4, point, rgb, vec3};
   use crate::scene::Sphere;
 
   use super::*;

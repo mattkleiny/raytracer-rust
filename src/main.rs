@@ -23,32 +23,7 @@ fn main() {
 
   // floor
   scene.add_object(
-    Sphere::new()
-      .with_transform(Matrix4x4::scale(10., 0.01, 10.))
-      .with_material(Material::default()
-        .with_color(rgb(1., 0.9, 0.9))
-        .with_specular(0.)),
-  );
-
-  // left wall
-  scene.add_object(
-    Sphere::new()
-      .with_transform(Matrix4x4::translate(0., 0., 5.))
-      .with_transform(Matrix4x4::rotate_y(-PI / 4.))
-      .with_transform(Matrix4x4::rotate_x(PI / 2.))
-      .with_transform(Matrix4x4::scale(10., 0.01, 10.))
-      .with_material(Material::default()
-        .with_color(rgb(1., 0.9, 0.9))
-        .with_specular(0.)),
-  );
-
-  // right wall
-  scene.add_object(
-    Sphere::new()
-      .with_transform(Matrix4x4::translate(0., 0., 5.))
-      .with_transform(Matrix4x4::rotate_y(PI / 4.))
-      .with_transform(Matrix4x4::rotate_x(PI / 2.))
-      .with_transform(Matrix4x4::scale(10., 0.01, 10.))
+    Plane::new(vec3(0., 1., 0.))
       .with_material(Material::default()
         .with_color(rgb(1., 0.9, 0.9))
         .with_specular(0.)),

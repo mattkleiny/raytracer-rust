@@ -1,18 +1,16 @@
 //! Sphere objects for use in scene rendering.
 
 use crate::maths::{Matrix4x4, point, Ray, Vector};
-use crate::scene::SceneNode;
-
-use super::Shape;
+use crate::scene::{SceneNode, Shape};
 
 /// A sphere in 3-space.
 #[derive(Clone, Debug)]
 pub struct Sphere;
 
 impl Sphere {
-  /// Creates a new sphere.
-  pub fn new() -> SceneNode<Sphere> {
-    SceneNode::new(Sphere)
+  /// Constructs a new sphere node
+  pub fn new() -> SceneNode<Self> {
+    SceneNode::new(Self)
   }
 }
 
@@ -50,7 +48,7 @@ impl Shape for Sphere {
 #[cfg(test)]
 mod tests {
   use crate::maths::{PI, point, vec3};
-  use crate::scene::SceneObject;
+  use crate::scene::Traceable;
 
   use super::*;
 

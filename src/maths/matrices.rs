@@ -3,7 +3,7 @@
 use std::fmt::{Debug, Formatter};
 use std::ops::{Index, IndexMut, Mul};
 
-use super::ApproxEq;
+use crate::maths::ApproxEq;
 
 pub type Matrix2x2 = Matrix<2, 4>;
 pub type Matrix3x3 = Matrix<3, 9>;

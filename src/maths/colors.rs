@@ -2,7 +2,7 @@
 
 use std::ops::{Add, Mul, Sub};
 
-use super::ApproxEq;
+use crate::maths::ApproxEq;
 
 /// Creates a new color with the given RGB values.
 pub const fn rgb(r: f32, g: f32, b: f32) -> Color {

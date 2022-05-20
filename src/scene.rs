@@ -14,8 +14,8 @@ mod lighting;
 mod materials;
 mod shapes;
 
-/// Allows an object to calculate intersection information with a Ray.
-pub trait SceneObject {
+/// An object in the scene that can be ray-traced.
+pub trait Traceable {
   /// Returns the material for the object.
   fn material(&self) -> &Material;
 
@@ -26,7 +26,7 @@ pub trait SceneObject {
   fn normal_at(&self, world_point: Vector) -> Vector;
 }
 
-/// A node in the scene with material and transform.
+/// A node in a scene with associated material and transform.
 pub struct SceneNode<S> {
   object: S,
   material: Material,
@@ -45,10 +45,7 @@ impl<S> SceneNode<S> {
 
   /// Sets the transform for this node.
   pub fn with_transform(self, transform: Matrix4x4) -> Self {
-    Self {
-      transform: self.transform * transform,
-      ..self
-    }
+    Self { transform: self.transform * transform, ..self }
   }
 
   /// Sets the material for this node.
@@ -57,7 +54,14 @@ impl<S> SceneNode<S> {
   }
 }
 
-impl<S> SceneObject for SceneNode<S> where S: Shape {
+/// A scene that can be rendered via ray tracing.
+pub struct Scene {
+  background_color: Color,
+  nodes: Vec<Box<dyn Traceable>>,
+  lights: Vec<PointLight>,
+}
+
+impl<S> Traceable for SceneNode<S> where S: Shape {
   fn material(&self) -> &Material {
     &self.material
   }
@@ -83,13 +87,6 @@ impl<S> SceneObject for SceneNode<S> where S: Shape {
   }
 }
 
-/// A scene that can be rendered via ray tracing.
-pub struct Scene {
-  background_color: Color,
-  nodes: Vec<Box<dyn SceneObject>>,
-  lights: Vec<PointLight>,
-}
-
 impl Scene {
   /// Create a new scene.
   pub fn new() -> Self {
@@ -101,7 +98,7 @@ impl Scene {
   }
 
   /// Add an object to the scene.
-  pub fn add_object(&mut self, object: impl SceneObject + 'static) {
+  pub fn add_object(&mut self, object: impl Traceable + 'static) {
     self.nodes.push(Box::new(object));
   }
 
@@ -179,13 +176,13 @@ impl Scene {
 
 /// A single intersection in an set.
 pub struct Intersection<'a> {
-  pub object: &'a dyn SceneObject,
+  pub object: &'a dyn Traceable,
   pub distance: f32,
 }
 
 impl<'a> Intersection<'a> {
   /// Creates a new intersection
-  pub fn new(object: &'a dyn SceneObject, distance: f32) -> Self {
+  pub fn new(object: &'a dyn Traceable, distance: f32) -> Self {
     Self { object, distance }
   }
 }
@@ -202,7 +199,7 @@ impl<'a> IntersectionSet<'a> {
   }
 
   /// Adds an intersection to the set.
-  pub fn push(&mut self, object: &'a dyn SceneObject, distance: f32) {
+  pub fn push(&mut self, object: &'a dyn Traceable, distance: f32) {
     self.hits.push(Intersection::new(object, distance));
   }
 
@@ -416,12 +413,13 @@ mod tests {
     scene.add_light(PointLight::new(vec3(-10., 10., -10.), Color::WHITE));
 
     scene.add_object(
-      Sphere::new().with_material(
-        Material::default()
-          .with_color(rgb(0.8, 1., 0.6))
-          .with_diffuse(0.7)
-          .with_specular(0.2),
-      ),
+      Sphere::new()
+        .with_material(
+          Material::default()
+            .with_color(rgb(0.8, 1., 0.6))
+            .with_diffuse(0.7)
+            .with_specular(0.2)
+        ),
     );
 
     scene.add_object(

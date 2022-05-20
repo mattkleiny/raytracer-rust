@@ -1,8 +1,6 @@
 //! Transformation matrices for vectors and points.
 
-use crate::maths::Vector;
-
-use super::Matrix4x4;
+use crate::maths::{Matrix4x4, Vector};
 
 impl Matrix4x4 {
   /// Creates a new translation matrix.
