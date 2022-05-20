@@ -18,7 +18,7 @@ pub struct Scene {
   objects: Vec<Box<dyn SceneObject>>,
   point_lights: Vec<PointLight>,
 }
-  
+
 impl Scene {
   /// Create a new scene.
   pub fn new() -> Self {
@@ -99,9 +99,7 @@ pub struct IntersectionSet<'a> {
 impl<'a> IntersectionSet<'a> {
   /// Creates a new intersection set.
   pub fn new() -> Self {
-    Self {
-      hits: Vec::new()
-    }
+    Self { hits: Vec::new() }
   }
 
   /// Adds an intersection to the set.
@@ -147,14 +145,13 @@ impl<'a> DerefMut for IntersectionSet<'a> {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{Matrix4x4, rgb, vec3};
+  use crate::maths::{rgb, vec3, Matrix4x4};
 
   use super::*;
 
   #[test]
   fn intersection_set_should_return_closest_hit() {
-    let sphere = &Sphere::new()
-        .with_transform(Matrix4x4::translate(0., 0., -5.));
+    let sphere = &Sphere::new().with_transform(Matrix4x4::translate(0., 0., -5.));
 
     let mut set = IntersectionSet::new();
 
@@ -166,8 +163,7 @@ mod tests {
 
   #[test]
   fn intersection_set_should_ignore_negative_t() {
-    let sphere = &Sphere::new()
-        .with_transform(Matrix4x4::translate(0., 0., -5.));
+    let sphere = &Sphere::new().with_transform(Matrix4x4::translate(0., 0., -5.));
 
     let mut set = IntersectionSet::new();
 
@@ -179,8 +175,7 @@ mod tests {
 
   #[test]
   fn intersection_set_should_return_nothing_when_all_negative() {
-    let sphere = &Sphere::new()
-        .with_transform(Matrix4x4::translate(0., 0., -5.));
+    let sphere = &Sphere::new().with_transform(Matrix4x4::translate(0., 0., -5.));
 
     let mut set = IntersectionSet::new();
 
@@ -192,8 +187,7 @@ mod tests {
 
   #[test]
   fn intersection_set_should_always_return_lowest_non_negative_hit() {
-    let sphere = &Sphere::new()
-        .with_transform(Matrix4x4::translate(0., 0., -5.));
+    let sphere = &Sphere::new().with_transform(Matrix4x4::translate(0., 0., -5.));
 
     let mut set = IntersectionSet::new();
 
@@ -226,20 +220,23 @@ mod tests {
     scene.add_point_light(PointLight::new(vec3(-10., 10., -10.), Color::WHITE));
 
     scene.add_object(
-      Sphere::new()
-          .with_material(Material::default()
-              .with_color(rgb(0.8, 1., 0.6))
-              .with_diffuse(0.7)
-              .with_specular(0.2))
+      Sphere::new().with_material(
+        Material::default()
+          .with_color(rgb(0.8, 1., 0.6))
+          .with_diffuse(0.7)
+          .with_specular(0.2),
+      ),
     );
 
     scene.add_object(
       Sphere::new()
-          .with_transform(Matrix4x4::scale(0.5, 0.5, 0.5))
-          .with_material(Material::default()
-              .with_color(rgb(0.8, 1., 0.6))
-              .with_diffuse(0.7)
-              .with_specular(0.2))
+        .with_transform(Matrix4x4::scale(0.5, 0.5, 0.5))
+        .with_material(
+          Material::default()
+            .with_color(rgb(0.8, 1., 0.6))
+            .with_diffuse(0.7)
+            .with_specular(0.2),
+        ),
     );
 
     scene

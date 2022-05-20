@@ -19,7 +19,18 @@ fn main() {
   let mut scene = Scene::new();
 
   scene.add_point_light(PointLight::new(vec3(-10., 10., -10.), rgb(1., 1., 1.)));
-  scene.add_object(Sphere::new().with_material(Material::default().with_color(rgb(1., 0.2, 1.))));
+
+  scene.add_object(
+    Sphere::new()
+      .with_transform(Matrix4x4::translate(1., 0., 0.))
+      .with_material(Material::default().with_color(rgb(1., 0., 0.))),
+  );
+
+  scene.add_object(
+    Sphere::new()
+      .with_transform(Matrix4x4::translate(-1., 0., 0.))
+      .with_material(Material::default().with_color(rgb(0., 1., 0.))),
+  );
 
   for y in 0..canvas.height() {
     for x in 0..canvas.width() {
@@ -33,22 +44,16 @@ fn main() {
 
       let ray = Ray::new(point, direction);
 
-      if let Some(intersection) = scene.intersect(ray).closest_hit() {
-        let hit_position = ray.position(intersection.distance);
-        let hit_normal = intersection.object.normal_at(hit_position);
+      if let Some(Intersection { object, distance }) = scene.intersect(ray).closest_hit() {
+        let hit_position = ray.position(distance);
+        let hit_normal = object.normal_at(hit_position);
         let eye = -ray.direction;
 
         let mut color = Color::BLACK;
 
         for light in scene.point_lights() {
-          // TODO: mix lights appropriately
-          color = phong_lighting(
-            &intersection.object.material(),
-            &light,
-            hit_position,
-            hit_normal,
-            eye,
-          );
+          // TODO: mix lights appropriately?
+          color = phong_lighting(&object.material(), &light, hit_position, hit_normal, eye);
         }
 
         canvas.set_pixel(x, y, color);
