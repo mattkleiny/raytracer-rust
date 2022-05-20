@@ -4,4 +4,4 @@ A super simple ray tracer implementation in Rust.
 
 Work in progress.
 
-![Example output](output.png)
+![Example output](example.png)
