@@ -7,7 +7,7 @@ pub use lighting::*;
 pub use materials::*;
 pub use spheres::*;
 
-use crate::maths::{Color, Ray, Vector};
+use crate::maths::{Color, Point, Ray, Vector};
 
 mod cameras;
 mod lighting;
@@ -70,18 +70,40 @@ impl Scene {
   fn apply_lighting(&self, ray: Ray, intersection: Intersection) -> Color {
     let mut color = self.background_color;
     let lighting_data = calculate_lighting_data(&intersection, ray);
+    let in_shadow = self.is_shadowed(lighting_data.over_point);
 
     for light in &self.point_lights {
       color = color + phong_lighting(
         &lighting_data.object.material(),
         light,
-        lighting_data.point,
+        lighting_data.over_point,
         lighting_data.eye,
         lighting_data.normal,
+        in_shadow,
       );
     }
 
     color
+  }
+
+  /// Determines if the given point is in shadow.
+  fn is_shadowed(&self, point: Point) -> bool {
+    for light in &self.point_lights {
+      let light_vector = light.position - point;
+
+      let distance = light_vector.magnitude();
+      let direction = light_vector.normalize();
+
+      let ray = Ray::new(point, direction);
+
+      if let Some(intersection) = self.intersect(ray).closest_hit() {
+        if intersection.distance < distance {
+          return true;
+        }
+      }
+    }
+
+    false
   }
 }
 
@@ -279,6 +301,54 @@ mod tests {
     let color = scene.sample(ray);
 
     assert_eq!(color, rgb(0.38012764, 0.47515953, 0.28509575));
+  }
+
+  #[test]
+  fn there_is_no_shadow_when_nothing_is_colinear_with_point_and_light() {
+    let scene = create_test_scene();
+    let point = point(0., 10., 10.);
+
+    assert!(!scene.is_shadowed(point));
+  }
+
+  #[test]
+  fn the_shadow_when_an_object_is_between_the_point_and_the_light() {
+    let scene = create_test_scene();
+    let point = point(10., -10., 10.);
+
+    assert!(scene.is_shadowed(point));
+  }
+
+  #[test]
+  fn there_is_no_shadow_when_an_object_is_behind_the_light() {
+    let scene = create_test_scene();
+    let point = point(-20., 20., -20.);
+
+    assert!(!scene.is_shadowed(point));
+  }
+
+  #[test]
+  fn there_is_no_shadow_when_an_object_is_behind_the_point() {
+    let scene = create_test_scene();
+    let point = point(-2., 2., -2.);
+
+    assert!(!scene.is_shadowed(point));
+  }
+
+  #[test]
+  fn apply_lighting_is_given_an_intersection_in_shadow() {
+    let mut scene = Scene::new();
+
+    scene.add_point_light(PointLight::new(point(0., 0., -10.), rgb(1., 1., 1.)));
+    scene.add_object(Sphere::new());
+    scene.add_object(Sphere::new().with_transform(Matrix4x4::translate(0., 0., 10.)));
+
+    let ray = Ray::new(point(0., 0., 5.), vec3(0., 0., 1.));
+    let intersection = Intersection::new(scene.objects[1].deref(), 4.);
+
+    let color = scene.apply_lighting(ray, intersection);
+
+    assert_eq!(color, rgb(0.1, 0.1, 0.1));
   }
 
   /// Creates a default scene with two spheres a single light source.

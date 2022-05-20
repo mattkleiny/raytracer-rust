@@ -78,7 +78,7 @@ impl Camera {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::PI;
+  use crate::maths::{PI, vec3};
 
   use super::*;
 

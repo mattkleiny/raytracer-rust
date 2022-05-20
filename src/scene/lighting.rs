@@ -26,6 +26,7 @@ impl PointLight {
 pub struct LightingData<'a> {
   pub object: &'a dyn SceneObject,
   pub point: Point,
+  pub over_point: Point,
   pub eye: Vector,
   pub normal: Vector,
   pub distance: f32,
@@ -47,11 +48,19 @@ pub fn calculate_lighting_data<'a>(intersection: &'a Intersection, ray: Ray) -> 
     inside = true;
   }
 
-  LightingData { object, point, eye, normal, inside, distance }
+  LightingData {
+    object,
+    point,
+    over_point: point + normal * 0.0001,
+    eye,
+    normal,
+    inside,
+    distance,
+  }
 }
 
 /// Computes lighting for a particular point in the scene via phong model.
-pub fn phong_lighting(material: &Material, light: &PointLight, position: Vector, eye: Vector, normal: Vector) -> Color {
+pub fn phong_lighting(material: &Material, light: &PointLight, position: Vector, eye: Vector, normal: Vector, in_shadow: bool) -> Color {
   // combine surface color with the light color/intensity
   let effective_color = material.color * light.intensity;
 
@@ -80,12 +89,16 @@ pub fn phong_lighting(material: &Material, light: &PointLight, position: Vector,
     }
   }
 
-  ambient + diffuse + specular
+  if in_shadow {
+    ambient
+  } else {
+    ambient + diffuse + specular
+  }
 }
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{point, rgb, vec3};
+  use crate::maths::{point, rgb, vec3, EPSILON, Matrix4x4};
   use crate::scene::Sphere;
 
   use super::*;
@@ -107,7 +120,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, eye, normal);
+    let result = phong_lighting(&material, &light, position, eye, normal, false);
 
     assert_eq!(result, rgb(1.9, 1.9, 1.9));
   }
@@ -121,7 +134,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, eye, normal);
+    let result = phong_lighting(&material, &light, position, eye, normal, false);
 
     assert_eq!(result, rgb(1.0, 1.0, 1.0));
   }
@@ -135,7 +148,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 10., -10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, eye, normal);
+    let result = phong_lighting(&material, &light, position, eye, normal, false);
 
     assert_eq!(result, rgb(0.7364, 0.7364, 0.7364));
   }
@@ -149,7 +162,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 10., -10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, eye, normal);
+    let result = phong_lighting(&material, &light, position, eye, normal, false);
 
     assert_eq!(result, rgb(1.6363853, 1.6363853, 1.6363853));
   }
@@ -163,7 +176,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., 10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, eye, normal);
+    let result = phong_lighting(&material, &light, position, eye, normal, false);
 
     assert_eq!(result, rgb(0.1, 0.1, 0.1));
   }
@@ -204,5 +217,32 @@ mod tests {
     assert_eq!(data.eye, vec3(0., 0., -1.));
     assert_eq!(data.normal, vec3(0., 0., -1.));
     assert_eq!(data.inside, true);
+  }
+
+  #[test]
+  fn calculate_lighting_data_adds_point_in_direction_of_normal() {
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
+    let sphere = Sphere::new().with_transform(Matrix4x4::translate(0., 0., 1.));
+    let intersection = Intersection::new(&sphere, 5.);
+
+    let data = calculate_lighting_data(&intersection, ray);
+
+    assert!(data.over_point.z < EPSILON / 2.);
+    assert!(data.point.z > data.over_point.z);
+  }
+
+  #[test]
+  fn lighting_with_surface_in_shadow() {
+    let material = Material::default();
+    let position = point(0., 0., 0.);
+
+    let eye = vec3(0., 0., -1.);
+    let normal = vec3(0., 0., -1.);
+
+    let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
+
+    let color = phong_lighting(&material, &light, position, eye, normal, true);
+
+    assert_eq!(color, rgb(0.1, 0.1, 0.1));
   }
 }

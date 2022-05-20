@@ -14,7 +14,7 @@ mod rays;
 mod transforms;
 mod vectors;
 
-const EPSILON: f32 = 0.00001;
+pub const EPSILON: f32 = 0.00001;
 
 /// Determines that two values are approximately equal.
 pub trait ApproxEq<Rhs = Self> {
