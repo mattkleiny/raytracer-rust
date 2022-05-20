@@ -54,13 +54,6 @@ impl<S> SceneNode<S> {
   }
 }
 
-/// A scene that can be rendered via ray tracing.
-pub struct Scene {
-  background_color: Color,
-  nodes: Vec<Box<dyn Traceable>>,
-  lights: Vec<PointLight>,
-}
-
 impl<S> Traceable for SceneNode<S> where S: Shape {
   fn material(&self) -> &Material {
     &self.material
@@ -87,11 +80,18 @@ impl<S> Traceable for SceneNode<S> where S: Shape {
   }
 }
 
+/// A scene that can be rendered via ray tracing.
+pub struct Scene {
+  ambient_color: Color,
+  nodes: Vec<Box<dyn Traceable>>,
+  lights: Vec<PointLight>,
+}
+
 impl Scene {
   /// Create a new scene.
   pub fn new() -> Self {
     Self {
-      background_color: Color::BLACK,
+      ambient_color: Color::BLACK,
       nodes: Vec::new(),
       lights: Vec::new(),
     }
@@ -108,11 +108,11 @@ impl Scene {
   }
 
   /// Computes the color of the scene at the given ray.
-  pub fn sample(&self, ray: Ray) -> Color {
+  pub fn trace(&self, ray: Ray) -> Color {
     if let Some(intersection) = self.intersect(ray).closest_hit() {
       self.apply_lighting(ray, intersection)
     } else {
-      self.background_color
+      self.ambient_color
     }
   }
 
@@ -134,7 +134,7 @@ impl Scene {
 
   /// Calculates lighting for the given ray intersection.
   fn apply_lighting(&self, ray: Ray, intersection: Intersection) -> Color {
-    let mut color = self.background_color;
+    let mut color = self.ambient_color;
 
     let lighting_data = calculate_lighting_data(&intersection, ray);
     let in_shadow = self.is_shadowed(lighting_data.over_point);
@@ -221,7 +221,9 @@ impl<'a> IntersectionSet<'a> {
       }
     }
 
-    closest_object.map(|object| Intersection::new(object, closest_t))
+    closest_object.map(|object| {
+      Intersection::new(object, closest_t)
+    })
   }
 }
 
@@ -341,9 +343,9 @@ mod tests {
     let mut scene = create_test_scene();
     let ray = Ray::new(point(0., 0., -5.), vec3(0., 1., 0.));
 
-    scene.background_color = Color::RED;
+    scene.ambient_color = Color::RED;
 
-    let color = scene.sample(ray);
+    let color = scene.trace(ray);
 
     assert_eq!(color, Color::RED);
   }
@@ -353,7 +355,7 @@ mod tests {
     let scene = create_test_scene();
     let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
 
-    let color = scene.sample(ray);
+    let color = scene.trace(ray);
 
     assert_eq!(color, rgb(0.38012764, 0.47515953, 0.28509575));
   }

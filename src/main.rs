@@ -14,7 +14,7 @@ fn main() {
   use scene::*;
 
   // lets render a simple scene
-  let mut camera = Camera::new(1920 / 3, 1080 / 3, PI / 3.);
+  let mut camera = Camera::new(1920, 1080, PI / 3.);
   let mut scene = Scene::new();
 
   camera.transform = Matrix4x4::look_at(point(0., 1.5, -5.), point(0., 1., 0.), vec3(0., 1., 0.));

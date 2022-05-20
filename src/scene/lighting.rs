@@ -41,20 +41,14 @@ pub fn calculate_lighting_data<'a>(intersection: &'a Intersection, ray: Ray) -> 
   let mut normal = object.normal_at(point);
   let mut inside = false;
 
+  let over_point = point + normal * 0.0001;
+
   if normal.dot(eye) < 0. {
     normal = -normal;
     inside = true;
   }
 
-  LightingData {
-    object,
-    point,
-    over_point: point + normal * 0.0001,
-    eye,
-    normal,
-    inside,
-    distance,
-  }
+  LightingData { object, point, over_point, eye, normal, inside, distance }
 }
 
 /// Computes lighting for a particular point in the scene via phong model.

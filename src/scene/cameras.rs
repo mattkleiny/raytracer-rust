@@ -66,7 +66,7 @@ impl Camera {
     for y in 0..self.height as usize {
       for x in 0..self.width as usize {
         let ray = self.ray_for_pixel(x, y);
-        let color = scene.sample(ray);
+        let color = scene.trace(ray);
 
         canvas.set_pixel(x, y, color);
       }
