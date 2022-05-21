@@ -26,7 +26,7 @@ fn main() {
   scene.add_object(
     Plane::new(vec3(0., 1., 0.))
       .with_material(Material::default()
-        .with_color(rgb(1., 0.9, 0.9))
+        .with_pattern(CheckerPattern::new(Color::WHITE, Color::BLACK))
         .with_specular(0.)
         .with_reflective(0.7)
       ),
