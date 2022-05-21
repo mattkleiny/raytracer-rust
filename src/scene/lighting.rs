@@ -28,7 +28,7 @@ pub struct LightingData<'a> {
   pub object_position: Point,
   pub eye: Vector,
   pub normal: Vector,
-  pub reflection: Vector,
+  pub reflect_direction: Vector,
   pub distance: f32,
   pub inside: bool,
 }
@@ -46,7 +46,7 @@ pub fn calculate_lighting_data<'a>(intersection: &'a Intersection, ray: Ray) -> 
   let world_position_bias = world_position + normal * 0.0001;
   let object_position = object.world_to_object(world_position);
 
-  let reflection = ray.direction.reflect(normal);
+  let reflect_direction = ray.direction.reflect(normal);
 
   if normal.dot(eye) < 0. {
     normal = -normal;
@@ -60,7 +60,7 @@ pub fn calculate_lighting_data<'a>(intersection: &'a Intersection, ray: Ray) -> 
     object_position,
     eye,
     normal,
-    reflection,
+    reflect_direction,
     inside,
     distance,
   }
@@ -269,6 +269,6 @@ mod tests {
 
     let data = calculate_lighting_data(&intersection, ray);
 
-    assert_eq!(data.reflection, vec3(0., 2f32.sqrt() / 2., 2f32.sqrt() / 2.));
+    assert_eq!(data.reflect_direction, vec3(0., 2f32.sqrt() / 2., 2f32.sqrt() / 2.));
   }
 }

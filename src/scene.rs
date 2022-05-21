@@ -7,7 +7,7 @@ pub use lighting::*;
 pub use materials::*;
 pub use shapes::*;
 
-use crate::maths::{Color, Matrix4x4, Point, Ray, vec3, Vector};
+use crate::maths::{ApproxEq, Color, Matrix4x4, Point, Ray, vec3, Vector};
 
 mod cameras;
 mod lighting;
@@ -106,6 +106,8 @@ pub struct Scene {
 }
 
 impl Scene {
+  const MAX_DEPTH: usize = 32;
+
   /// Create a new scene.
   pub fn new() -> Self {
     Self {
@@ -127,8 +129,17 @@ impl Scene {
 
   /// Computes the color of the scene at the given ray.
   pub fn trace(&self, ray: Ray) -> Color {
+    self.trace_inner(ray, 0)
+  }
+
+  /// Computes the color of the scene at the given ray.
+  fn trace_inner(&self, ray: Ray, depth: usize) -> Color {
+    if depth > Self::MAX_DEPTH {
+      return self.ambient_color;
+    }
+
     if let Some(intersection) = self.intersect(ray).closest_hit() {
-      self.apply_lighting(ray, intersection)
+      self.apply_lighting(ray, intersection, depth)
     } else {
       self.ambient_color
     }
@@ -151,14 +162,15 @@ impl Scene {
   }
 
   /// Calculates lighting for the given ray intersection.
-  fn apply_lighting(&self, ray: Ray, intersection: Intersection) -> Color {
-    let mut color = self.ambient_color;
+  fn apply_lighting(&self, ray: Ray, intersection: Intersection, depth: usize) -> Color {
+    let mut surface = self.ambient_color;
 
     let lighting_data = calculate_lighting_data(&intersection, ray);
     let in_shadow = self.is_shadowed(lighting_data.world_position_bias);
 
+    // calculate direct surface lighting
     for light in &self.lights {
-      color = color + phong_lighting(
+      surface = surface + phong_lighting(
         &lighting_data.object.material(),
         light,
         lighting_data.world_position_bias,
@@ -169,7 +181,10 @@ impl Scene {
       );
     }
 
-    color
+    // calculate reflective properties
+    let reflected = self.reflected_color(ray, intersection, depth);
+
+    surface + reflected
   }
 
   /// Determines if the given point is in shadow.
@@ -190,6 +205,25 @@ impl Scene {
     }
 
     false
+  }
+
+  /// Determines the reflected color of the given ray.
+  fn reflected_color(&self, ray: Ray, intersection: Intersection, depth: usize) -> Color {
+    let material = intersection.object.material();
+
+    if material.reflective.is_approx(0.) {
+      return Color::BLACK;
+    }
+
+    // TODO: re-use this between two methods?
+    let lighting_data = calculate_lighting_data(&intersection, ray);
+
+    let reflect_ray = Ray::new(
+      lighting_data.world_position_bias,
+      lighting_data.reflect_direction,
+    );
+
+    self.trace_inner(reflect_ray, depth + 1) * material.reflective
   }
 }
 
@@ -338,7 +372,7 @@ mod tests {
     let object = scene.nodes[0].deref();
     let intersection = Intersection::new(object.deref(), 4.);
 
-    let color = scene.apply_lighting(ray, intersection);
+    let color = scene.apply_lighting(ray, intersection, 0);
 
     assert_eq!(color, rgb(0.38012764, 0.47515953, 0.28509575));
   }
@@ -352,7 +386,7 @@ mod tests {
     let object = scene.nodes[1].deref();
     let intersection = Intersection::new(object, 0.5);
 
-    let color = scene.apply_lighting(ray, intersection);
+    let color = scene.apply_lighting(ray, intersection, 0);
 
     assert_eq!(color, rgb(0.1, 0.1, 0.1));
   }
@@ -422,9 +456,43 @@ mod tests {
     let ray = Ray::new(point(0., 0., 5.), vec3(0., 0., 1.));
     let intersection = Intersection::new(scene.nodes[1].deref(), 4.);
 
-    let color = scene.apply_lighting(ray, intersection);
+    let color = scene.apply_lighting(ray, intersection, 0);
 
     assert_eq!(color, rgb(0.1, 0.1, 0.1));
+  }
+
+  #[test]
+  fn reflected_color_for_non_reflective_material() {
+    let scene = create_test_scene();
+    let ray = Ray::new(point(0., 0., 0.), vec3(0., 0., 1.));
+    let object = scene.nodes[1].deref();
+
+    let intersection = Intersection::new(object, -1.);
+
+    let color = scene.reflected_color(ray, intersection, 0);
+
+    assert_eq!(color, Color::BLACK);
+  }
+
+  #[test]
+  fn reflected_color_for_reflective_material() {
+    let mut scene = create_test_scene();
+
+    scene.add_object(
+      Plane::new(vec3(0., 1., 0.))
+        .with_material(Material::default()
+          .with_reflective(0.5))
+        .with_transform(Matrix4x4::translate(0., -1., 0.)),
+    );
+
+    let ray = Ray::new(point(0., 0., -3.), vec3(0., -2f32.sqrt() / 2., 2f32.sqrt() / 2.));
+    let object = scene.nodes[2].deref();
+
+    let intersection = Intersection::new(object, 2f32.sqrt());
+
+    let color = scene.reflected_color(ray, intersection, 0);
+
+    assert_eq!(color, rgb(0.19007981, 0.23759975, 0.14255986));
   }
 
   /// Creates a default scene with two spheres a single light source.

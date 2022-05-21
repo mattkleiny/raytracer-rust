@@ -27,7 +27,9 @@ fn main() {
     Plane::new(vec3(0., 1., 0.))
       .with_material(Material::default()
         .with_color(rgb(1., 0.9, 0.9))
-        .with_specular(0.)),
+        .with_specular(0.)
+        .with_reflective(0.7)
+      ),
   );
 
   // sphere 1
@@ -35,7 +37,7 @@ fn main() {
     Sphere::new()
       .with_transform(Matrix4x4::translate(-0.5, 1., 0.5))
       .with_material(Material::default()
-        .with_pattern(TransformPattern::new(CheckerPattern::new(rgb(1., 0.8, 0.1), rgb(0.5, 1., 0.1)))
+        .with_pattern(TransformPattern::new(RingPattern::new(rgb(1., 0.8, 0.1), rgb(0.5, 1., 0.1)))
           .with_transform(Matrix4x4::scale(0.1, 0.1, 0.1))
           .with_transform(Matrix4x4::rotate_x(PI / 2.))
         )
