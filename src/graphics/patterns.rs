@@ -87,6 +87,59 @@ impl ColorPattern for GradientPattern {
   }
 }
 
+/// A simple ring color pattern.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RingPattern {
+  a: Color,
+  b: Color,
+}
+
+impl RingPattern {
+  /// Creates a new ring pattern with the given colors.
+  pub fn new(a: Color, b: Color) -> Self {
+    Self { a, b }
+  }
+}
+
+
+impl ColorPattern for RingPattern {
+  fn sample_at(&self, point: Vector) -> Color {
+    let x2 = point.x * point.x;
+    let z2 = point.z * point.z;
+
+    if (x2 + z2).sqrt().floor() % 2. == 0. {
+      self.a
+    } else {
+      self.b
+    }
+  }
+}
+
+/// A simple checker color pattern.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CheckerPattern {
+  a: Color,
+  b: Color,
+}
+
+impl CheckerPattern {
+  /// Creates a new checker pattern with the given colors.
+  pub fn new(a: Color, b: Color) -> Self {
+    Self { a, b }
+  }
+}
+
+impl ColorPattern for CheckerPattern {
+  fn sample_at(&self, point: Vector) -> Color {
+    if (point.x.floor() + point.y.floor() + point.z.floor()) % 2. == 0. {
+      self.a
+    } else {
+      self.b
+    }
+  }
+}
+
+
 #[cfg(test)]
 mod tests {
   use crate::maths::{point, rgb};
@@ -131,5 +184,33 @@ mod tests {
     assert_eq!(pattern.sample_at(point(0.25, 0., 0.)), rgb(0.75, 0.75, 0.75));
     assert_eq!(pattern.sample_at(point(0.5, 0., 0.)), rgb(0.5, 0.5, 0.5));
     assert_eq!(pattern.sample_at(point(0.75, 0., 0.)), rgb(0.25, 0.25, 0.25));
+  }
+
+  #[test]
+  fn ring_pattern_should_extend_in_both_x_and_z() {
+    let pattern = RingPattern::new(Color::WHITE, Color::BLACK);
+
+    assert_eq!(pattern.sample_at(point(0., 0., 0.)), Color::WHITE);
+    assert_eq!(pattern.sample_at(point(1., 0., 0.)), Color::BLACK);
+    assert_eq!(pattern.sample_at(point(0., 0., 1.)), Color::BLACK);
+    assert_eq!(pattern.sample_at(point(0.708, 0., 1.)), Color::BLACK);
+  }
+
+  #[test]
+  fn checker_pattern_should_repeat_in_x() {
+    let pattern = CheckerPattern::new(Color::WHITE, Color::BLACK);
+
+    assert_eq!(pattern.sample_at(point(0., 0., 0.)), Color::WHITE);
+    assert_eq!(pattern.sample_at(point(0., 0.99, 0.)), Color::WHITE);
+    assert_eq!(pattern.sample_at(point(0., 1.01, 0.)), Color::BLACK);
+  }
+
+  #[test]
+  fn checker_pattern_should_repeat_in_z() {
+    let pattern = CheckerPattern::new(Color::WHITE, Color::BLACK);
+
+    assert_eq!(pattern.sample_at(point(0., 0., 0.)), Color::WHITE);
+    assert_eq!(pattern.sample_at(point(0., 0., 0.99)), Color::WHITE);
+    assert_eq!(pattern.sample_at(point(0., 0., 1.01)), Color::BLACK);
   }
 }

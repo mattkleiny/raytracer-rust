@@ -75,8 +75,8 @@ impl Material {
 
 #[cfg(test)]
 mod tests {
+  use crate::graphics::StripedPattern;
   use crate::maths::point;
-  use crate::StripedPattern;
 
   use super::*;
 
