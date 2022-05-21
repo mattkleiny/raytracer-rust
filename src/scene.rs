@@ -106,7 +106,7 @@ pub struct Scene {
 }
 
 impl Scene {
-  const MAX_DEPTH: usize = 32;
+  const MAX_DEPTH: usize = 5;
 
   /// Create a new scene.
   pub fn new() -> Self {
