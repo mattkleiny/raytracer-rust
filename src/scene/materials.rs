@@ -1,11 +1,27 @@
 //! Material management for objects.
 
-use crate::maths::Color;
+use crate::graphics::ColorPattern;
+use crate::maths::{Color, Vector};
+
+/// A texture for use in material rendering.
+pub enum Texture {
+  Solid(Color),
+  Pattern(Box<dyn ColorPattern>),
+}
+
+impl Texture {
+  /// Samples the materials color at the given object point.
+  pub fn sample_at(&self, point: Vector) -> Color {
+    match self {
+      Texture::Solid(color) => *color,
+      Texture::Pattern(pattern) => pattern.sample_at(point)
+    }
+  }
+}
 
 /// Defines a material used in scene rendering.
-#[derive(Clone, Debug)]
 pub struct Material {
-  pub color: Color,
+  pub texture: Texture,
   pub ambient: f32,
   pub diffuse: f32,
   pub specular: f32,
@@ -16,7 +32,7 @@ impl Default for Material {
   /// Returns a default material.
   fn default() -> Self {
     Self {
-      color: Color::WHITE,
+      texture: Texture::Solid(Color::WHITE),
       ambient: 0.1,
       diffuse: 0.9,
       specular: 0.9,
@@ -28,7 +44,12 @@ impl Default for Material {
 impl Material {
   /// Applies the given color.
   pub fn with_color(self, color: Color) -> Self {
-    Material { color, ..self }
+    Material { texture: Texture::Solid(color), ..self }
+  }
+
+  /// Applies the given pattern.
+  pub fn with_pattern(self, pattern: impl ColorPattern + 'static) -> Self {
+    Material { texture: Texture::Pattern(Box::new(pattern)), ..self }
   }
 
   /// Applies the given ambient value.
@@ -49,5 +70,31 @@ impl Material {
   /// Applies the given shininess value.
   pub fn with_shininess(self, shininess: f32) -> Self {
     Material { shininess, ..self }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::maths::point;
+  use crate::StripedPattern;
+
+  use super::*;
+
+  #[test]
+  fn material_should_yield_solid_texture() {
+    let material = Material::default().with_color(Color::WHITE);
+
+    assert_eq!(material.texture.sample_at(point(0., 0., 0.)), Color::WHITE);
+    assert_eq!(material.texture.sample_at(point(1., 0., 0.)), Color::WHITE);
+    assert_eq!(material.texture.sample_at(point(-1., 0., 0.)), Color::WHITE);
+  }
+
+  #[test]
+  fn material_should_yield_striped_textures() {
+    let material = Material::default().with_pattern(StripedPattern::new(Color::WHITE, Color::BLACK));
+
+    assert_eq!(material.texture.sample_at(point(0., 0., 0.)), Color::WHITE);
+    assert_eq!(material.texture.sample_at(point(1., 0., 0.)), Color::BLACK);
+    assert_eq!(material.texture.sample_at(point(2., 0., 0.)), Color::WHITE);
   }
 }

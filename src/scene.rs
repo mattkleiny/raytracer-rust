@@ -335,7 +335,7 @@ mod tests {
 
     let color = scene.apply_lighting(ray, intersection);
 
-    assert_eq!(color, rgb(0.9049522, 0.9049522, 0.9049522));
+    assert_eq!(color, rgb(0.1, 0.1, 0.1));
   }
 
   #[test]

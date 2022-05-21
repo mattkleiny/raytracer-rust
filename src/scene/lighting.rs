@@ -54,7 +54,7 @@ pub fn calculate_lighting_data<'a>(intersection: &'a Intersection, ray: Ray) -> 
 /// Computes lighting for a particular point in the scene via phong model.
 pub fn phong_lighting(material: &Material, light: &PointLight, position: Vector, eye: Vector, normal: Vector, in_shadow: bool) -> Color {
   // combine surface color with the light color/intensity
-  let effective_color = material.color * light.intensity;
+  let effective_color = material.texture.sample_at(position) * light.intensity;
 
   // find the direction of the light source
   let light_direction = (light.position - position).normalize();
