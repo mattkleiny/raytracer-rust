@@ -24,6 +24,12 @@ pub trait Traceable {
 
   /// Computes the normal vector at a given world point on the surface of the object.
   fn normal_at(&self, world_point: Vector) -> Vector;
+
+  /// Transforms the given world point to object space.
+  fn world_to_object(&self, world_point: Vector) -> Vector;
+
+  /// Transforms the given object point to world space.
+  fn object_to_world(&self, object_point: Vector) -> Vector;
 }
 
 /// A node in a scene with associated material and transform.
@@ -77,6 +83,18 @@ impl<S> Traceable for SceneNode<S> where S: Shape {
     } else {
       vec3(0., 0., 0.)
     }
+  }
+
+  fn world_to_object(&self, world_point: Vector) -> Vector {
+    if let Ok(inverse) = self.transform.invert() {
+      inverse * world_point
+    } else {
+      world_point
+    }
+  }
+
+  fn object_to_world(&self, object_point: Vector) -> Vector {
+    self.transform * object_point
   }
 }
 
@@ -137,13 +155,14 @@ impl Scene {
     let mut color = self.ambient_color;
 
     let lighting_data = calculate_lighting_data(&intersection, ray);
-    let in_shadow = self.is_shadowed(lighting_data.over_point);
+    let in_shadow = self.is_shadowed(lighting_data.world_position_bias);
 
     for light in &self.lights {
       color = color + phong_lighting(
         &lighting_data.object.material(),
         light,
-        lighting_data.over_point,
+        lighting_data.world_position_bias,
+        lighting_data.object_position,
         lighting_data.eye,
         lighting_data.normal,
         in_shadow,
