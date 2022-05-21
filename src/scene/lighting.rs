@@ -28,6 +28,7 @@ pub struct LightingData<'a> {
   pub object_position: Point,
   pub eye: Vector,
   pub normal: Vector,
+  pub reflection: Vector,
   pub distance: f32,
   pub inside: bool,
 }
@@ -45,6 +46,8 @@ pub fn calculate_lighting_data<'a>(intersection: &'a Intersection, ray: Ray) -> 
   let world_position_bias = world_position + normal * 0.0001;
   let object_position = object.world_to_object(world_position);
 
+  let reflection = ray.direction.reflect(normal);
+
   if normal.dot(eye) < 0. {
     normal = -normal;
     inside = true;
@@ -57,6 +60,7 @@ pub fn calculate_lighting_data<'a>(intersection: &'a Intersection, ray: Ray) -> 
     object_position,
     eye,
     normal,
+    reflection,
     inside,
     distance,
   }
@@ -90,7 +94,7 @@ pub fn phong_lighting(
     diffuse = effective_color * material.diffuse * light_dot_normal;
 
     // A negative number means the light reflects away from the eye
-    let reflect_direction = Vector::reflect(-light_direction, normal);
+    let reflect_direction = -light_direction.reflect(normal);
     let reflect_dot_eye = reflect_direction.dot(eye);
 
     if reflect_dot_eye >= 0. {
@@ -110,7 +114,7 @@ pub fn phong_lighting(
 #[cfg(test)]
 mod tests {
   use crate::maths::{EPSILON, Matrix4x4, point, rgb, vec3};
-  use crate::scene::Sphere;
+  use crate::scene::{Plane, Sphere};
 
   use super::*;
 
@@ -255,5 +259,16 @@ mod tests {
     let color = phong_lighting(&material, &light, position, position, eye, normal, true);
 
     assert_eq!(color, rgb(0.1, 0.1, 0.1));
+  }
+
+  #[test]
+  fn calculate_lighting_data_computes_reflection_vector() {
+    let ray = Ray::new(point(0., 1., -1.), vec3(0., -2f32.sqrt() / 2., 2f32.sqrt() / 2.));
+    let plane = Plane::new(vec3(0., 1., 0.));
+    let intersection = Intersection::new(&plane, 1.);
+
+    let data = calculate_lighting_data(&intersection, ray);
+
+    assert_eq!(data.reflection, vec3(0., 2f32.sqrt() / 2., 2f32.sqrt() / 2.));
   }
 }

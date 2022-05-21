@@ -26,6 +26,7 @@ pub struct Material {
   pub diffuse: f32,
   pub specular: f32,
   pub shininess: f32,
+  pub reflective: f32,
 }
 
 impl Default for Material {
@@ -37,6 +38,7 @@ impl Default for Material {
       diffuse: 0.9,
       specular: 0.9,
       shininess: 200.0,
+      reflective: 0.,
     }
   }
 }
@@ -70,6 +72,11 @@ impl Material {
   /// Applies the given shininess value.
   pub fn with_shininess(self, shininess: f32) -> Self {
     Material { shininess, ..self }
+  }
+
+  /// Applies the given reflective value.
+  pub fn with_reflective(self, reflective: f32) -> Self {
+    Material { reflective, ..self }
   }
 }
 

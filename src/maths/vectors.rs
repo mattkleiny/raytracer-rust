@@ -38,11 +38,6 @@ impl Vector {
     Self { x, y, z, w }
   }
 
-  /// Reflects a vector about the given normal.
-  pub fn reflect(vector: Self, normal: Self) -> Self {
-    vector - normal * 2. * vector.dot(normal)
-  }
-
   /// Does this vector represent a vector between two points?
   pub fn is_vector(&self) -> bool {
     self.w.is_approx(0.)
@@ -96,6 +91,11 @@ impl Vector {
     let z = self.x * other.y - self.y * other.x;
 
     return vec3(x, y, z);
+  }
+
+  /// Reflects a vector about the given normal.
+  pub fn reflect(self, normal: Self) -> Self {
+    self - normal * 2. * self.dot(normal)
   }
 }
 
@@ -393,7 +393,7 @@ mod tests {
     let vector = vec3(1., -1., 0.);
     let normal = vec3(0., 1., 0.);
 
-    let reflection = Vector::reflect(vector, normal);
+    let reflection = vector.reflect(normal);
 
     assert_eq!(reflection, vec3(1., 1., 0.));
   }
@@ -403,7 +403,7 @@ mod tests {
     let vector = vec3(0., -1., 0.);
     let normal = vec3(2f32.sqrt() / 2., 2f32.sqrt() / 2., 0.);
 
-    let reflection = Vector::reflect(vector, normal);
+    let reflection = vector.reflect(normal);
 
     assert_eq!(reflection, vec3(1., 0., 0.));
   }
