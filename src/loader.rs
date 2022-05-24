@@ -1,10 +1,22 @@
 use serde::{Deserialize, Serialize};
 
-use crate::maths::{Matrix4x4, rgb, vec3};
+use crate::graphics::{CheckerPattern, GradientPattern, RingPattern, StripedPattern};
+use crate::maths::{Color, Matrix4x4, rgb, vec3, Vector};
 use crate::scene::*;
 
-/// An (x, y, z) tuple.
 type PackedTuple = [f64; 3];
+
+impl From<PackedTuple> for Vector {
+  fn from([x, y, z]: PackedTuple) -> Self {
+    vec3(x, y, z)
+  }
+}
+
+impl From<PackedTuple> for Color {
+  fn from([r, g, b]: PackedTuple) -> Self {
+    rgb(r, g, b)
+  }
+}
 
 /// A serialized `Scene` that can be read from a file.
 #[derive(Serialize, Deserialize)]
@@ -38,6 +50,7 @@ struct PackedObject {
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 enum PackedKind {
   Sphere,
   Plane,
@@ -75,8 +88,8 @@ impl PackedObject {
       PackedKind::Plane => {
         Box::new(
           Plane::new(vec3(0., 1., 0.))
-          .with_material(material)
-          .with_transform(transform)
+            .with_material(material)
+            .with_transform(transform)
         )
       }
     }
@@ -85,7 +98,7 @@ impl PackedObject {
 
 #[derive(Serialize, Deserialize)]
 struct PackedMaterial {
-  color: Option<PackedTuple>,
+  texture: Option<PackedTexture>,
   ambient: Option<f64>,
   diffuse: Option<f64>,
   specular: Option<f64>,
@@ -97,7 +110,7 @@ struct PackedMaterial {
 
 impl PackedMaterial {
   pub fn build(&self) -> Material {
-    let [r, g, b] = self.color.unwrap_or([1., 1., 1.]);
+    let texture = self.texture.unwrap_or(PackedTexture::Solid([1., 1., 1.]));
     let ambient = self.ambient.unwrap_or(0.1);
     let diffuse = self.diffuse.unwrap_or(0.9);
     let specular = self.specular.unwrap_or(0.9);
@@ -107,8 +120,7 @@ impl PackedMaterial {
     let refractivity = self.refractivity.unwrap_or(1.);
 
     Material {
-      // TODO: other texture types?
-      texture: Texture::Solid(rgb(r, g, b)),
+      texture: texture.build(),
       ambient,
       diffuse,
       specular,
@@ -116,6 +128,46 @@ impl PackedMaterial {
       transparency,
       reflectivity,
       refractivity,
+    }
+  }
+}
+
+#[derive(Copy, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum PackedTexture {
+  Solid(PackedTuple),
+  Checker(PackedTuple, PackedTuple),
+  Gradient(PackedTuple, PackedTuple),
+  Ring(PackedTuple, PackedTuple),
+  Striped(PackedTuple, PackedTuple),
+}
+
+impl PackedTexture {
+  pub fn build(&self) -> Texture {
+    match *self {
+      PackedTexture::Solid(color) => {
+        Texture::Solid(color.into())
+      }
+      PackedTexture::Checker(from, to) => {
+        let pattern = CheckerPattern::new(from.into(), to.into());
+
+        Texture::Pattern(Box::new(pattern))
+      }
+      PackedTexture::Gradient(from, to) => {
+        let pattern = GradientPattern::new(from.into(), to.into());
+
+        Texture::Pattern(Box::new(pattern))
+      }
+      PackedTexture::Ring(from, to) => {
+        let pattern = RingPattern::new(from.into(), to.into());
+
+        Texture::Pattern(Box::new(pattern))
+      }
+      PackedTexture::Striped(from, to) => {
+        let pattern = StripedPattern::new(from.into(), to.into());
+
+        Texture::Pattern(Box::new(pattern))
+      }
     }
   }
 }
