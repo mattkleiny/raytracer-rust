@@ -1,5 +1,5 @@
 use crate::graphics::Canvas;
-use crate::maths::{point, Matrix4x4, Ray};
+use crate::maths::{Matrix4x4, point, Ray, vec3};
 use crate::scene::Scene;
 
 /// A camera for orientating a view transform.
@@ -23,6 +23,7 @@ impl Camera {
     let half_width;
     let half_height;
 
+    // calculate aspect ratio
     if aspect >= 1. {
       half_width = half_view;
       half_height = half_width / aspect;
@@ -31,6 +32,11 @@ impl Camera {
       half_height = half_view;
     }
 
+    // set a default position
+    let from = point(0., 1.5, -5.);
+    let to = point(0., 1., 0.);
+    let up = vec3(0., 1., 0.);
+
     Self {
       width,
       height,
@@ -38,7 +44,7 @@ impl Camera {
       half_height,
       field_of_view,
       pixel_size: (half_width * 2.) / width as f64,
-      transform: Matrix4x4::identity(),
+      transform: Matrix4x4::look_at(from, to, up),
     }
   }
 
@@ -81,7 +87,7 @@ impl Camera {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{vec3, ApproxEq, PI};
+  use crate::maths::{ApproxEq, PI, vec3};
 
   use super::*;
 
@@ -101,7 +107,9 @@ mod tests {
 
   #[test]
   fn construct_ray_through_center_of_camera() {
-    let camera = Camera::new(201, 101, PI / 2.);
+    let mut camera = Camera::new(201, 101, PI / 2.);
+    camera.transform = Matrix4x4::identity();
+
     let ray = camera.ray_for_pixel(100, 50);
 
     assert_eq!(ray.origin, point(0., 0., 0.));
@@ -110,7 +118,9 @@ mod tests {
 
   #[test]
   fn construct_ray_through_corner_of_camera() {
-    let camera = Camera::new(201, 101, PI / 2.);
+    let mut camera = Camera::new(201, 101, PI / 2.);
+    camera.transform = Matrix4x4::identity();
+
     let ray = camera.ray_for_pixel(0, 0);
 
     assert_eq!(ray.origin, point(0., 0., 0.));

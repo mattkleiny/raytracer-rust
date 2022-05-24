@@ -119,6 +119,11 @@ impl Scene {
     self.nodes.push(Box::new(object));
   }
 
+  /// Add an object to the scene.
+  pub fn add_object_boxed(&mut self, object: Box<dyn Traceable>) {
+    self.nodes.push(object);
+  }
+
   /// Add a point light to the scene.
   pub fn add_light(&mut self, light: PointLight) {
     self.lights.push(light);
@@ -170,8 +175,8 @@ impl Scene {
     // calculate direct surface lighting
     for light in &self.lights {
       surface = surface + phong_lighting(
-        &lighting_data.object.material(),
         light,
+        &lighting_data.object.material(),
         lighting_data.world_position_bias,
         lighting_data.object_position,
         lighting_data.eye,
@@ -210,7 +215,7 @@ impl Scene {
   fn reflected_color(&self, lighting_data: &LightingData, depth: usize) -> Color {
     let material = lighting_data.object.material();
 
-    if material.reflective.is_approx(0.) {
+    if material.reflectivity.is_approx(0.) {
       return Color::BLACK;
     }
 
@@ -219,7 +224,7 @@ impl Scene {
       lighting_data.reflect_direction,
     );
 
-    self.trace_inner(reflect_ray, depth + 1) * material.reflective
+    self.trace_inner(reflect_ray, depth + 1) * material.reflectivity
   }
 }
 

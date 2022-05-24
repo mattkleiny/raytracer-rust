@@ -67,7 +67,7 @@ impl<'a> LightingData<'a> {
         n1 = 1.0;
       } else {
         if let Some(hit) = containers.last() {
-          n1 = hit.object.material().refractive_index;
+          n1 = hit.object.material().refractivity;
         }
       }
 
@@ -82,7 +82,7 @@ impl<'a> LightingData<'a> {
           n2 = 1.0;
         } else {
           if let Some(hit) = containers.last() {
-            n2 = hit.object.material().refractive_index;
+            n2 = hit.object.material().refractivity;
           }
         }
 
@@ -106,7 +106,7 @@ impl<'a> LightingData<'a> {
 }
 
 /// Computes lighting for a particular point in the scene via phong model.
-pub fn phong_lighting(material: &Material, light: &PointLight, world_position: Vector, object_position: Vector, eye: Vector, normal: Vector, in_shadow: bool) -> Color {
+pub fn phong_lighting(light: &PointLight, material: &Material, world_position: Vector, object_position: Vector, eye: Vector, normal: Vector, in_shadow: bool) -> Color {
   // combine surface color with the light color/intensity
   let effective_color = material.texture.sample_at(object_position) * light.intensity;
 
@@ -165,7 +165,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, position, eye, normal, false);
+    let result = phong_lighting(&light, &material, position, position, eye, normal, false);
 
     assert_eq!(result, rgb(1.9, 1.9, 1.9));
   }
@@ -178,7 +178,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, position, eye, normal, false);
+    let result = phong_lighting(&light, &material, position, position, eye, normal, false);
 
     assert_eq!(result, rgb(1.0, 1.0, 1.0));
   }
@@ -191,7 +191,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 10., -10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, position, eye, normal, false);
+    let result = phong_lighting(&light, &material, position, position, eye, normal, false);
 
     assert_eq!(result, rgb(0.7364, 0.7364, 0.7364));
   }
@@ -204,7 +204,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 10., -10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, position, eye, normal, false);
+    let result = phong_lighting(&light, &material, position, position, eye, normal, false);
 
     assert_eq!(result, rgb(1.6363961030678928, 1.6363961030678928, 1.6363961030678928));
   }
@@ -217,7 +217,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., 10.), rgb(1., 1., 1.));
 
-    let result = phong_lighting(&material, &light, position, position, eye, normal, false);
+    let result = phong_lighting(&light, &material, position, position, eye, normal, false);
 
     assert_eq!(result, rgb(0.1, 0.1, 0.1));
   }
@@ -288,7 +288,7 @@ mod tests {
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
 
-    let color = phong_lighting(&material, &light, position, position, eye, normal, true);
+    let color = phong_lighting(&light, &material, position, position, eye, normal, true);
 
     assert_eq!(color, rgb(0.1, 0.1, 0.1));
   }
@@ -315,12 +315,9 @@ mod tests {
           .with_refractive_index(refractive))
     }
 
-    let a = create_glass_sphere(1.5)
-      .with_transform(Matrix4x4::scale(2., 2., 2.));
-    let b = create_glass_sphere(2.0)
-      .with_transform(Matrix4x4::translate(0., 0., -0.25));
-    let c = create_glass_sphere(2.5)
-      .with_transform(Matrix4x4::translate(0., 0., 0.25));
+    let a = create_glass_sphere(1.5).with_transform(Matrix4x4::scale(2., 2., 2.));
+    let b = create_glass_sphere(2.0).with_transform(Matrix4x4::translate(0., 0., -0.25));
+    let c = create_glass_sphere(2.5).with_transform(Matrix4x4::translate(0., 0., 0.25));
 
     let ray = Ray::new(point(0., 0., -4.), vec3(0., 0., 1.));
     let mut hits = HitList::new();
@@ -332,6 +329,7 @@ mod tests {
     hits.push(&c, 5.25);
     hits.push(&a, 6.);
 
+    // compute lighting data for each intersection
     let data: Vec<_> = hits
       .iter()
       .map(|hit| LightingData::calculate(ray, hit, &hits))

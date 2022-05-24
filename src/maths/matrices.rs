@@ -183,7 +183,7 @@ impl Matrix4x4 {
   pub fn invert(&self) -> anyhow::Result<Self> {
     let determinant = self.determinant();
     if determinant == 0. {
-      return Err(anyhow!("Cannot invert a matrix with a determinant of 0"));
+      return Err(anyhow::anyhow!("Cannot invert a matrix with a determinant of 0"));
     }
 
     let mut result = Self::new();
