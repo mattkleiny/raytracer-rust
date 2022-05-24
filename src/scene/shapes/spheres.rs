@@ -34,8 +34,7 @@ impl Shape for Sphere {
     results
   }
 
-  fn normal_at(&self, world_point: Vector, inverse_transform: Matrix4x4) -> Vector {
-    let object_point = inverse_transform * world_point;
+  fn normal_at(&self, object_point: Vector, inverse_transform: Matrix4x4) -> Vector {
     let object_normal = object_point - point(0., 0., 0.);
     let mut world_normal = inverse_transform.transpose() * object_normal;
 

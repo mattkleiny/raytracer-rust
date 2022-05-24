@@ -13,6 +13,6 @@ pub trait Shape {
   /// Computes the distances at which the given ray intersects the shape.
   fn intersect(&self, object_ray: Ray) -> Vec<f64>;
 
-  /// Computes the normal vector at a given object point on the surface of the object.
+  /// Computes the normal vector at a given world point on the surface of the object.
   fn normal_at(&self, object_point: Vector, inverse_transform: Matrix4x4) -> Vector;
 }

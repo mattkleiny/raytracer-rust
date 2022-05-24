@@ -71,8 +71,9 @@ impl<S> Traceable for SceneNode<S> where S: Shape {
 
   fn intersect(&self, world_ray: Ray) -> IntersectionSet {
     let mut results = IntersectionSet::new();
-
-    for distance in self.object.intersect(self.inverse_transform * world_ray) {
+    let object_ray = self.inverse_transform * world_ray;
+    
+    for distance in self.object.intersect(object_ray) {
       results.push(self, distance);
     }
 
@@ -80,7 +81,9 @@ impl<S> Traceable for SceneNode<S> where S: Shape {
   }
 
   fn normal_at(&self, world_point: Vector) -> Vector {
-    self.object.normal_at(world_point, self.inverse_transform)
+    let object_point = self.inverse_transform * world_point;
+    
+    self.object.normal_at(object_point, self.inverse_transform)
   }
 
   fn world_to_object(&self, world_point: Vector) -> Vector {
