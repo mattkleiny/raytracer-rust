@@ -1,7 +1,7 @@
 //! Light sources for scene rendering.
 
 use crate::maths::{Color, Point, Ray, Vector};
-use crate::scene::{Intersection, Material, Traceable};
+use crate::scene::{Hit, HitList, Material, Traceable};
 
 /// A point light in the scene.
 #[derive(Clone, Debug)]
@@ -31,27 +31,63 @@ pub struct LightingData<'a> {
   pub reflect_direction: Vector,
   pub distance: f64,
   pub inside: bool,
+  pub refractive_indices: [f64; 2],
 }
 
-impl<'a> LightingData<'a> { 
+impl<'a> LightingData<'a> {
   /// Pre-computes the lighting data used in the phong model.
-  pub fn calculate(intersection: &'a Intersection, ray: Ray) -> Self {
-    let object = intersection.object;
-    let world_position = ray.position(intersection.distance);
+  pub fn calculate(ray: Ray, main_hit: &'a Hit, hits: &'a HitList) -> Self {
+    let object = main_hit.object;
+
+    // calculation positions, directions and normals
+    let world_position = ray.position(main_hit.distance);
     let eye = -ray.direction;
-    let distance = intersection.distance;
+    let distance = main_hit.distance;
 
     let mut normal = object.normal_at(world_position);
-    let mut inside = false;
 
     let world_position_bias = world_position + normal * 0.0001;
     let object_position = object.world_to_object(world_position_bias);
-
     let reflect_direction = ray.direction.reflect(normal);
+
+    // determine if we're inside the object
+    let mut inside = false;
 
     if normal.dot(eye) < 0. {
       normal = -normal;
       inside = true;
+    }
+
+    // determine first and last refractive indices
+    let [mut n1, mut n2] = [1., 1.];
+    let mut containers: Vec<&Hit> = Vec::new();
+
+    for hit in hits.iter() {
+      if hit == main_hit {
+        n1 = 1.0;
+      } else {
+        if let Some(hit) = containers.last() {
+          n1 = hit.object.material().refractive_index;
+        }
+      }
+
+      if containers.contains(&hit) {
+        containers.retain(|it| *it != hit);
+      } else {
+        containers.push(hit);
+      }
+
+      if hit == main_hit {
+        if containers.is_empty() {
+          n2 = 1.0;
+        } else {
+          if let Some(hit) = containers.last() {
+            n2 = hit.object.material().refractive_index;
+          }
+        }
+
+        break;
+      }
     }
 
     Self {
@@ -64,6 +100,7 @@ impl<'a> LightingData<'a> {
       reflect_direction,
       inside,
       distance,
+      refractive_indices: [n1, n2],
     }
   }
 }
@@ -108,7 +145,7 @@ pub fn phong_lighting(material: &Material, light: &PointLight, world_position: V
 #[cfg(test)]
 mod tests {
   use crate::maths::{EPSILON, Matrix4x4, point, rgb, vec3};
-  use crate::scene::{Plane, Sphere};
+  use crate::scene::{HitList, Plane, SceneNode, Sphere};
 
   use super::*;
 
@@ -124,7 +161,6 @@ mod tests {
   fn phong_lighting_with_the_eye_between_light_and_surface() {
     let material = Material::default();
     let position = vec3(0., 0., 0.);
-
     let eye = vec3(0., 0., -1.);
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
@@ -138,7 +174,6 @@ mod tests {
   fn phong_lighting_with_eye_between_light_and_surface_offset_45_degrees() {
     let material = Material::default();
     let position = vec3(0., 0., 0.);
-
     let eye = vec3(0., 2f64.sqrt() / 2., 2f64.sqrt() / 2.);
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
@@ -152,7 +187,6 @@ mod tests {
   fn phong_lighting_with_eye_opposite_surface_light_offset_45_degrees() {
     let material = Material::default();
     let position = vec3(0., 0., 0.);
-
     let eye = vec3(0., 0., -1.);
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 10., -10.), rgb(1., 1., 1.));
@@ -166,7 +200,6 @@ mod tests {
   fn phong_lighting_with_eye_in_the_path_of_the_reflection_vector() {
     let material = Material::default();
     let position = vec3(0., 0., 0.);
-
     let eye = vec3(0., -2f64.sqrt() / 2., -2f64.sqrt() / 2.);
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 10., -10.), rgb(1., 1., 1.));
@@ -180,7 +213,6 @@ mod tests {
   fn phong_lighting_with_light_behind_the_surface() {
     let material = Material::default();
     let position = vec3(0., 0., 0.);
-
     let eye = vec3(0., 0., -1.);
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., 10.), rgb(1., 1., 1.));
@@ -194,9 +226,11 @@ mod tests {
   fn calculate_lighting_data_for_an_intersection() {
     let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
     let sphere = Sphere::new();
-    let intersection = Intersection::new(&sphere, 4.);
 
-    let data = LightingData::calculate(&intersection, ray);
+    let hit = Hit::new(&sphere, 4.);
+    let hits = HitList::from(&[hit]);
+
+    let data = LightingData::calculate(ray, &hits[0], &hits);
 
     assert_eq!(data.world_position, point(0., 0., -1.));
     assert_eq!(data.eye, vec3(0., 0., -1.));
@@ -207,9 +241,11 @@ mod tests {
   fn calculate_lighting_data_determines_outside() {
     let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
     let sphere = Sphere::new();
-    let intersection = Intersection::new(&sphere, 4.);
 
-    let data = LightingData::calculate(&intersection, ray);
+    let hit = Hit::new(&sphere, 4.);
+    let hits = HitList::from(&[hit]);
+
+    let data = LightingData::calculate(ray, &hits[0], &hits);
 
     assert_eq!(data.inside, false);
   }
@@ -218,9 +254,11 @@ mod tests {
   fn calculate_lighting_data_determines_inside() {
     let ray = Ray::new(point(0., 0., 0.), vec3(0., 0., 1.));
     let sphere = Sphere::new();
-    let intersection = Intersection::new(&sphere, 1.);
 
-    let data = LightingData::calculate(&intersection, ray);
+    let hit = Hit::new(&sphere, 1.);
+    let hits = HitList::from(&[hit]);
+
+    let data = LightingData::calculate(ray, &hits[0], &hits);
 
     assert_eq!(data.world_position, point(0., 0., 1.));
     assert_eq!(data.eye, vec3(0., 0., -1.));
@@ -232,9 +270,11 @@ mod tests {
   fn calculate_lighting_data_adds_point_in_direction_of_normal() {
     let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
     let sphere = Sphere::new().with_transform(Matrix4x4::translate(0., 0., 1.));
-    let intersection = Intersection::new(&sphere, 5.);
 
-    let data = LightingData::calculate(&intersection, ray);
+    let hit = Hit::new(&sphere, 5.);
+    let hits = HitList::from(&[hit]);
+
+    let data = LightingData::calculate(ray, &hits[0], &hits);
 
     assert!(data.world_position_bias.z < EPSILON / 2.);
     assert!(data.world_position.z > data.world_position_bias.z);
@@ -244,10 +284,8 @@ mod tests {
   fn lighting_with_surface_in_shadow() {
     let material = Material::default();
     let position = point(0., 0., 0.);
-
     let eye = vec3(0., 0., -1.);
     let normal = vec3(0., 0., -1.);
-
     let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
 
     let color = phong_lighting(&material, &light, position, position, eye, normal, true);
@@ -259,10 +297,51 @@ mod tests {
   fn calculate_lighting_data_computes_reflection_vector() {
     let ray = Ray::new(point(0., 1., -1.), vec3(0., -2f64.sqrt() / 2., 2f64.sqrt() / 2.));
     let plane = Plane::new(vec3(0., 1., 0.));
-    let intersection = Intersection::new(&plane, 1.);
 
-    let data = LightingData::calculate(&intersection, ray);
+    let hit = Hit::new(&plane, 1.);
+    let hits = HitList::from(&[hit]);
+
+    let data = LightingData::calculate(ray, &hits[0], &hits);
 
     assert_eq!(data.reflect_direction, vec3(0., 2f64.sqrt() / 2., 2f64.sqrt() / 2.));
+  }
+
+  #[test]
+  fn calculate_lighting_data_finds_refractive_indices_at_various_intersections() {
+    fn create_glass_sphere(refractive: f64) -> SceneNode<Sphere> {
+      Sphere::new()
+        .with_material(Material::default()
+          .with_transparency(1.)
+          .with_refractive_index(refractive))
+    }
+
+    let a = create_glass_sphere(1.5)
+      .with_transform(Matrix4x4::scale(2., 2., 2.));
+    let b = create_glass_sphere(2.0)
+      .with_transform(Matrix4x4::translate(0., 0., -0.25));
+    let c = create_glass_sphere(2.5)
+      .with_transform(Matrix4x4::translate(0., 0., 0.25));
+
+    let ray = Ray::new(point(0., 0., -4.), vec3(0., 0., 1.));
+    let mut hits = HitList::new();
+
+    hits.push(&a, 2.);
+    hits.push(&b, 2.75);
+    hits.push(&c, 3.25);
+    hits.push(&b, 4.75);
+    hits.push(&c, 5.25);
+    hits.push(&a, 6.);
+
+    let data: Vec<_> = hits
+      .iter()
+      .map(|hit| LightingData::calculate(ray, hit, &hits))
+      .collect();
+
+    assert_eq!(data[0].refractive_indices, [1.0, 1.5]);
+    assert_eq!(data[1].refractive_indices, [1.5, 2.0]);
+    assert_eq!(data[2].refractive_indices, [2.0, 2.5]);
+    assert_eq!(data[3].refractive_indices, [2.5, 2.5]);
+    assert_eq!(data[4].refractive_indices, [2.5, 1.5]);
+    assert_eq!(data[5].refractive_indices, [1.5, 1.0]);
   }
 }

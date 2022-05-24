@@ -27,7 +27,8 @@ pub struct Material {
   pub specular: f64,
   pub shininess: f64,
   pub reflective: f64,
-  pub refractive: f64,
+  pub transparency: f64,
+  pub refractive_index: f64,
 }
 
 impl Default for Material {
@@ -40,7 +41,8 @@ impl Default for Material {
       specular: 0.9,
       shininess: 200.0,
       reflective: 0.,
-      refractive: 0.,
+      transparency: 0.,
+      refractive_index: 1.,
     }
   }
 }
@@ -81,9 +83,14 @@ impl Material {
     Material { reflective, ..self }
   }
 
+  /// Applies the given transparency value.
+  pub fn with_transparency(self, transparency: f64) -> Self {
+    Material { transparency, ..self }
+  }
+
   /// Applies the given refractive value.
-  pub fn with_refractive(self, refractive: f64) -> Self {
-    Material { refractive, ..self }
+  pub fn with_refractive_index(self, refractive: f64) -> Self {
+    Material { refractive_index: refractive, ..self }
   }
 }
 

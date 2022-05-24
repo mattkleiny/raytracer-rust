@@ -20,7 +20,7 @@ pub trait Traceable {
   fn material(&self) -> &Material;
 
   /// Calculates the distances of intersection for the given ray.
-  fn intersect(&self, world_ray: Ray) -> IntersectionSet;
+  fn intersect(&self, world_ray: Ray) -> HitList;
 
   /// Computes the normal vector at a given world point on the surface of the object.
   fn normal_at(&self, world_point: Vector) -> Vector;
@@ -69,10 +69,10 @@ impl<S> Traceable for SceneNode<S> where S: Shape {
     &self.material
   }
 
-  fn intersect(&self, world_ray: Ray) -> IntersectionSet {
-    let mut results = IntersectionSet::new();
+  fn intersect(&self, world_ray: Ray) -> HitList {
+    let mut results = HitList::new();
     let object_ray = self.inverse_transform * world_ray;
-    
+
     for distance in self.object.intersect(object_ray) {
       results.push(self, distance);
     }
@@ -82,7 +82,7 @@ impl<S> Traceable for SceneNode<S> where S: Shape {
 
   fn normal_at(&self, world_point: Vector) -> Vector {
     let object_point = self.inverse_transform * world_point;
-    
+
     self.object.normal_at(object_point, self.inverse_transform)
   }
 
@@ -135,16 +135,18 @@ impl Scene {
       return self.ambient_color;
     }
 
-    if let Some(intersection) = self.intersect(ray).closest_hit() {
-      self.apply_lighting(ray, intersection, depth)
+    let hits = self.intersect(ray);
+
+    if let Some(hit) = hits.closest_hit() {
+      self.apply_lighting(ray, &hit, &hits, depth)
     } else {
       self.ambient_color
     }
   }
 
   /// Intersects the given ray with the entire scene.
-  fn intersect(&self, ray: Ray) -> IntersectionSet {
-    let mut results = IntersectionSet::new();
+  fn intersect(&self, ray: Ray) -> HitList {
+    let mut results = HitList::new();
 
     for object in &self.nodes {
       results.append(object.intersect(ray))
@@ -159,10 +161,10 @@ impl Scene {
   }
 
   /// Calculates lighting for the given ray intersection.
-  fn apply_lighting(&self, ray: Ray, intersection: Intersection, depth: usize) -> Color {
+  fn apply_lighting(&self, ray: Ray, hit: &Hit, hits: &HitList, depth: usize) -> Color {
     let mut surface = self.ambient_color;
 
-    let lighting_data = LightingData::calculate(&intersection, ray);
+    let lighting_data = LightingData::calculate(ray, &hit, &hits);
     let in_shadow = self.is_shadowed(lighting_data.world_position_bias);
 
     // calculate direct surface lighting
@@ -194,8 +196,8 @@ impl Scene {
 
       let ray = Ray::new(point, direction);
 
-      if let Some(intersection) = self.intersect(ray).closest_hit() {
-        if intersection.distance < distance {
+      if let Some(hit) = self.intersect(ray).closest_hit() {
+        if hit.distance < distance {
           return true;
         }
       }
@@ -221,33 +223,25 @@ impl Scene {
   }
 }
 
-/// A single intersection in an set.
-pub struct Intersection<'a> {
-  pub object: &'a dyn Traceable,
-  pub distance: f64,
+/// A set of hits for a scene.
+pub struct HitList<'a> {
+  hits: Vec<Hit<'a>>,
 }
 
-impl<'a> Intersection<'a> {
-  /// Creates a new intersection
-  pub fn new(object: &'a dyn Traceable, distance: f64) -> Self {
-    Self { object, distance }
-  }
-}
-
-/// A set of intersections for a particular object.
-pub struct IntersectionSet<'a> {
-  hits: Vec<Intersection<'a>>,
-}
-
-impl<'a> IntersectionSet<'a> {
+impl<'a> HitList<'a> {
   /// Creates a new intersection set.
   pub fn new() -> Self {
     Self { hits: Vec::new() }
   }
 
+  /// Creates a new set from the given intersections.
+  pub fn from(hits: &[Hit<'a>]) -> Self {
+    Self { hits: hits.to_vec() }
+  }
+
   /// Adds an intersection to the set.
   pub fn push(&mut self, object: &'a dyn Traceable, distance: f64) {
-    self.hits.push(Intersection::new(object, distance));
+    self.hits.push(Hit::new(object, distance));
   }
 
   /// Appends all items from the given other set to this set.
@@ -256,7 +250,7 @@ impl<'a> IntersectionSet<'a> {
   }
 
   /// Finds the closest hit intersection.
-  pub fn closest_hit(&self) -> Option<Intersection<'a>> {
+  pub fn closest_hit(&self) -> Option<Hit<'a>> {
     let mut closest_t = f64::MAX;
     let mut closest_object = None;
 
@@ -269,20 +263,43 @@ impl<'a> IntersectionSet<'a> {
     }
 
     closest_object.map(|object| {
-      Intersection::new(object, closest_t)
+      Hit::new(object, closest_t)
     })
   }
 }
 
-impl<'a> Deref for IntersectionSet<'a> {
-  type Target = Vec<Intersection<'a>>;
+/// A single intersection in an set.
+#[derive(Clone)]
+pub struct Hit<'a> {
+  pub object: &'a dyn Traceable,
+  pub distance: f64,
+}
+
+impl<'a> Hit<'a> {
+  /// Creates a new intersection
+  pub fn new(object: &'a dyn Traceable, distance: f64) -> Self {
+    Self { object, distance }
+  }
+}
+
+impl PartialEq for Hit<'_> {
+  fn eq(&self, other: &Self) -> bool {
+    let ptr_a = self.object as *const _;
+    let ptr_b = other.object as *const _;
+
+    self.distance == other.distance && ptr_a == ptr_b
+  }
+}
+
+impl<'a> Deref for HitList<'a> {
+  type Target = Vec<Hit<'a>>;
 
   fn deref(&self) -> &Self::Target {
     &self.hits
   }
 }
 
-impl<'a> DerefMut for IntersectionSet<'a> {
+impl<'a> DerefMut for HitList<'a> {
   fn deref_mut(&mut self) -> &mut Self::Target {
     &mut self.hits
   }
@@ -295,10 +312,10 @@ mod tests {
   use super::*;
 
   #[test]
-  fn intersection_set_should_return_closest_hit() {
+  fn hit_list_should_return_closest_hit() {
     let sphere = &Sphere::new().with_transform(Matrix4x4::translate(0., 0., -5.));
 
-    let mut set = IntersectionSet::new();
+    let mut set = HitList::new();
 
     set.push(sphere, 1.);
     set.push(sphere, 2.);
@@ -307,10 +324,10 @@ mod tests {
   }
 
   #[test]
-  fn intersection_set_should_ignore_negative_t() {
+  fn hit_list_should_ignore_negative_t() {
     let sphere = &Sphere::new().with_transform(Matrix4x4::translate(0., 0., -5.));
 
-    let mut set = IntersectionSet::new();
+    let mut set = HitList::new();
 
     set.push(sphere, -1.);
     set.push(sphere, 1.);
@@ -319,10 +336,10 @@ mod tests {
   }
 
   #[test]
-  fn intersection_set_should_return_nothing_when_all_negative() {
+  fn hit_list_should_return_nothing_when_all_negative() {
     let sphere = &Sphere::new().with_transform(Matrix4x4::translate(0., 0., -5.));
 
-    let mut set = IntersectionSet::new();
+    let mut set = HitList::new();
 
     set.push(sphere, -2.);
     set.push(sphere, -1.);
@@ -331,10 +348,10 @@ mod tests {
   }
 
   #[test]
-  fn intersection_set_should_always_return_lowest_non_negative_hit() {
+  fn hit_list_should_always_return_lowest_non_negative_hit() {
     let sphere = &Sphere::new().with_transform(Matrix4x4::translate(0., 0., -5.));
 
-    let mut set = IntersectionSet::new();
+    let mut set = HitList::new();
 
     set.push(sphere, 5.);
     set.push(sphere, 7.);
@@ -364,9 +381,11 @@ mod tests {
 
     let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
     let object = scene.nodes[0].deref();
-    let intersection = Intersection::new(object.deref(), 4.);
 
-    let color = scene.apply_lighting(ray, intersection, 0);
+    let hit = Hit::new(object.deref(), 4.);
+    let hits = HitList::from(&[hit]);
+
+    let color = scene.apply_lighting(ray, &hits[0], &hits, 0);
 
     assert_eq!(color, rgb(0.38012764, 0.47515953, 0.28509575));
   }
@@ -374,13 +393,16 @@ mod tests {
   #[test]
   fn apply_lighting_to_an_intersection_from_inside() {
     let mut scene = create_test_scene();
+
     scene.lights[0] = PointLight::new(point(0., 0.25, 0.), rgb(1., 1., 1.));
 
     let ray = Ray::new(point(0., 0., 0.), vec3(0., 0., 1.));
     let object = scene.nodes[1].deref();
-    let intersection = Intersection::new(object, 0.5);
 
-    let color = scene.apply_lighting(ray, intersection, 0);
+    let hit = Hit::new(object, 0.5);
+    let hits = HitList::from(&[hit]);
+
+    let color = scene.apply_lighting(ray, &hits[0], &hits, 0);
 
     assert_eq!(color, rgb(0.1, 0.1, 0.1));
   }
@@ -448,9 +470,11 @@ mod tests {
     scene.add_object(Sphere::new().with_transform(Matrix4x4::translate(0., 0., 10.)));
 
     let ray = Ray::new(point(0., 0., 5.), vec3(0., 0., 1.));
-    let intersection = Intersection::new(scene.nodes[1].deref(), 4.);
 
-    let color = scene.apply_lighting(ray, intersection, 0);
+    let hit = Hit::new(scene.nodes[1].deref(), 4.);
+    let hits = HitList::from(&[hit]);
+
+    let color = scene.apply_lighting(ray, &hits[0], &hits, 0);
 
     assert_eq!(color, rgb(0.1, 0.1, 0.1));
   }
@@ -461,8 +485,10 @@ mod tests {
     let ray = Ray::new(point(0., 0., 0.), vec3(0., 0., 1.));
     let object = scene.nodes[1].deref();
 
-    let intersection = Intersection::new(object, -1.);
-    let lighting_data = LightingData::calculate(&intersection, ray);
+    let hit = Hit::new(object, -1.);
+    let hits = HitList::from(&[hit]);
+
+    let lighting_data = LightingData::calculate(ray, &hits[0], &hits);
 
     let color = scene.reflected_color(&lighting_data, 0);
 
@@ -483,8 +509,10 @@ mod tests {
     let ray = Ray::new(point(0., 0., -3.), vec3(0., -2f64.sqrt() / 2., 2f64.sqrt() / 2.));
     let object = scene.nodes[2].deref();
 
-    let intersection = Intersection::new(object, 2f64.sqrt());
-    let lighting_data = LightingData::calculate(&intersection, ray);
+    let hit = Hit::new(object, 2f64.sqrt());
+    let hits = HitList::from(&[hit]);
+
+    let lighting_data = LightingData::calculate(ray, &hits[0], &hits);
 
     let color = scene.reflected_color(&lighting_data, 0);
 
