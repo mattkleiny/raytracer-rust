@@ -196,8 +196,7 @@ mod tests {
   #[test]
   fn normal_on_transformed_sphere() {
     let sphere = Sphere::new()
-      .with_transform(Matrix4x4::scale(1., 0.5, 1.))
-      .with_transform(Matrix4x4::rotate_z(PI / 5.));
+      .with_transform(Matrix4x4::scale(1., 0.5, 1.) * Matrix4x4::rotate_z(PI / 5.));
 
     let normal = sphere.normal_at(point(0., 2f64.sqrt() / 2., -2f64.sqrt() / 2.));
 

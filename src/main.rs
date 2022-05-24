@@ -38,8 +38,7 @@ fn main() {
       .with_transform(Matrix4x4::translate(-0.5, 1., 0.5))
       .with_material(Material::default()
         .with_pattern(TransformPattern::new(RingPattern::new(rgb(1., 0.8, 0.1), rgb(0.5, 1., 0.1)))
-          .with_transform(Matrix4x4::scale(0.1, 0.1, 0.1))
-          .with_transform(Matrix4x4::rotate_x(PI / 2.))
+          .with_transform(Matrix4x4::scale(0.1, 0.1, 0.1) * Matrix4x4::rotate_x(PI / 2.))
         )
         .with_diffuse(0.7)
         .with_specular(0.3)
@@ -49,8 +48,7 @@ fn main() {
   // sphere 2
   scene.add_object(
     Sphere::new()
-      .with_transform(Matrix4x4::translate(1.5, 0.5, -0.5))
-      .with_transform(Matrix4x4::scale(0.5, 0.5, 0.5))
+      .with_transform(Matrix4x4::translate(1.5, 0.5, -0.5) * Matrix4x4::scale(0.5, 0.5, 0.5))
       .with_material(Material::default()
         .with_color(rgb(0.5, 1., 0.1))
         .with_diffuse(0.7)
@@ -61,8 +59,7 @@ fn main() {
   // sphere 3
   scene.add_object(
     Sphere::new()
-      .with_transform(Matrix4x4::translate(-1.5, 0.33, -0.75))
-      .with_transform(Matrix4x4::scale(0.33, 0.33, 0.33))
+      .with_transform(Matrix4x4::translate(-1.5, 0.33, -0.75) * Matrix4x4::scale(0.33, 0.33, 0.33))
       .with_material(Material::default()
         .with_color(rgb(1., 0.8, 0.1))
         .with_diffuse(0.7)

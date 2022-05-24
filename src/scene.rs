@@ -7,7 +7,7 @@ pub use lighting::*;
 pub use materials::*;
 pub use shapes::*;
 
-use crate::maths::{ApproxEq, Color, Matrix4x4, Point, Ray, vec3, Vector};
+use crate::maths::{ApproxEq, Color, Matrix4x4, Point, Ray, Vector};
 
 mod cameras;
 mod lighting;
@@ -37,6 +37,7 @@ pub struct SceneNode<S> {
   object: S,
   material: Material,
   transform: Matrix4x4,
+  inverse_transform: Matrix4x4,
 }
 
 impl<S> SceneNode<S> {
@@ -44,14 +45,17 @@ impl<S> SceneNode<S> {
   pub fn new(object: S) -> Self {
     Self {
       object,
-      transform: Matrix4x4::identity(),
       material: Material::default(),
+      transform: Matrix4x4::identity(),
+      inverse_transform: Matrix4x4::identity(),
     }
   }
 
   /// Sets the transform for this node.
   pub fn with_transform(self, transform: Matrix4x4) -> Self {
-    Self { transform: self.transform * transform, ..self }
+    let inverse_transform = transform.invert().unwrap_or(transform);
+
+    Self { transform, inverse_transform, ..self }
   }
 
   /// Sets the material for this node.
@@ -68,29 +72,19 @@ impl<S> Traceable for SceneNode<S> where S: Shape {
   fn intersect(&self, world_ray: Ray) -> IntersectionSet {
     let mut results = IntersectionSet::new();
 
-    if let Ok(inverse) = self.transform.invert() {
-      for distance in self.object.intersect(inverse * world_ray) {
-        results.push(self, distance);
-      }
+    for distance in self.object.intersect(self.inverse_transform * world_ray) {
+      results.push(self, distance);
     }
 
     results
   }
 
   fn normal_at(&self, world_point: Vector) -> Vector {
-    if let Ok(inverse) = self.transform.invert() {
-      self.object.normal_at(world_point, inverse)
-    } else {
-      vec3(0., 0., 0.)
-    }
+    self.object.normal_at(world_point, self.inverse_transform)
   }
 
   fn world_to_object(&self, world_point: Vector) -> Vector {
-    if let Ok(inverse) = self.transform.invert() {
-      inverse * world_point
-    } else {
-      world_point
-    }
+    self.inverse_transform * world_point
   }
 
   fn object_to_world(&self, object_point: Vector) -> Vector {
