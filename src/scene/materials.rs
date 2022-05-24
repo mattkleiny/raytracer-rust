@@ -22,12 +22,12 @@ impl Texture {
 /// Defines a material used in scene rendering.
 pub struct Material {
   pub texture: Texture,
-  pub ambient: f32,
-  pub diffuse: f32,
-  pub specular: f32,
-  pub shininess: f32,
-  pub reflective: f32,
-  pub refractive: f32,
+  pub ambient: f64,
+  pub diffuse: f64,
+  pub specular: f64,
+  pub shininess: f64,
+  pub reflective: f64,
+  pub refractive: f64,
 }
 
 impl Default for Material {
@@ -57,32 +57,32 @@ impl Material {
   }
 
   /// Applies the given ambient value.
-  pub fn with_ambient(self, ambient: f32) -> Self {
+  pub fn with_ambient(self, ambient: f64) -> Self {
     Material { ambient, ..self }
   }
 
   /// Applies the given diffuse value.
-  pub fn with_diffuse(self, diffuse: f32) -> Self {
+  pub fn with_diffuse(self, diffuse: f64) -> Self {
     Material { diffuse, ..self }
   }
 
   /// Applies the given specular value.
-  pub fn with_specular(self, specular: f32) -> Self {
+  pub fn with_specular(self, specular: f64) -> Self {
     Material { specular, ..self }
   }
 
   /// Applies the given shininess value.
-  pub fn with_shininess(self, shininess: f32) -> Self {
+  pub fn with_shininess(self, shininess: f64) -> Self {
     Material { shininess, ..self }
   }
 
   /// Applies the given reflective value.
-  pub fn with_reflective(self, reflective: f32) -> Self {
+  pub fn with_reflective(self, reflective: f64) -> Self {
     Material { reflective, ..self }
   }
 
   /// Applies the given refractive value.
-  pub fn with_refractive(self, refractive: f32) -> Self {
+  pub fn with_refractive(self, refractive: f64) -> Self {
     Material { refractive, ..self }
   }
 }

@@ -23,7 +23,7 @@ impl Ray {
   }
 
   /// Computes the position of the ray at a given distance from it's origin.
-  pub fn position(&self, distance: f32) -> Vector {
+  pub fn position(&self, distance: f64) -> Vector {
     self.origin + self.direction * distance
   }
 }

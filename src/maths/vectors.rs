@@ -9,32 +9,32 @@ use super::ApproxEq;
 pub type Point = Vector;
 
 /// Creates a new point; an (X, Y, Z) tuple with the W component at 1.
-pub const fn point(x: f32, y: f32, z: f32) -> Vector {
+pub const fn point(x: f64, y: f64, z: f64) -> Vector {
   Vector { x, y, z, w: 1. }
 }
 
 /// Creates a new vector; an (X, Y, Z) tuple with the W component at 0.
-pub const fn vec3(x: f32, y: f32, z: f32) -> Vector {
+pub const fn vec3(x: f64, y: f64, z: f64) -> Vector {
   Vector { x, y, z, w: 0. }
 }
 
 /// Creates a (X, Y, Z, W) tuple in floating point 4-space.
-pub const fn vec4(x: f32, y: f32, z: f32, w: f32) -> Vector {
+pub const fn vec4(x: f64, y: f64, z: f64, w: f64) -> Vector {
   Vector { x, y, z, w }
 }
 
 /// A tuple in floating point 4-space, with basic mathematical operations defined.
 #[derive(Copy, Clone, Debug)]
 pub struct Vector {
-  pub x: f32,
-  pub y: f32,
-  pub z: f32,
-  pub w: f32,
+  pub x: f64,
+  pub y: f64,
+  pub z: f64,
+  pub w: f64,
 }
 
 impl Vector {
   /// Creates a new vector with the given components.
-  pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+  pub fn new(x: f64, y: f64, z: f64, w: f64) -> Self {
     Self { x, y, z, w }
   }
 
@@ -49,7 +49,7 @@ impl Vector {
   }
 
   /// Computes the magnitude of this vector; the length essentially.
-  pub fn magnitude(&self) -> f32 {
+  pub fn magnitude(&self) -> f64 {
     let x2 = self.x * self.x;
     let y2 = self.y * self.y;
     let z2 = self.z * self.z;
@@ -73,7 +73,7 @@ impl Vector {
   /// Computes the dot product of this vector and another.
   ///
   /// The dot product represents the 'shadow' of the other vector on this one.
-  pub fn dot(&self, other: Self) -> f32 {
+  pub fn dot(&self, other: Self) -> f64 {
     let x = self.x * other.x;
     let y = self.y * other.y;
     let z = self.z * other.z;
@@ -112,7 +112,7 @@ impl PartialEq for Vector {
 }
 
 impl Index<usize> for Vector {
-  type Output = f32;
+  type Output = f64;
 
   fn index(&self, index: usize) -> &Self::Output {
     match index {
@@ -176,10 +176,10 @@ impl Sub for Vector {
   }
 }
 
-impl Mul<f32> for Vector {
+impl Mul<f64> for Vector {
   type Output = Self;
 
-  fn mul(self, rhs: f32) -> Self::Output {
+  fn mul(self, rhs: f64) -> Self::Output {
     Self {
       x: self.x * rhs,
       y: self.y * rhs,
@@ -189,10 +189,10 @@ impl Mul<f32> for Vector {
   }
 }
 
-impl Div<f32> for Vector {
+impl Div<f64> for Vector {
   type Output = Self;
 
-  fn div(self, rhs: f32) -> Self::Output {
+  fn div(self, rhs: f64) -> Self::Output {
     Self {
       x: self.x / rhs,
       y: self.y / rhs,
@@ -342,12 +342,12 @@ mod tests {
 
   #[test]
   fn vectors_should_compute_magnitude_of_positive_vector() {
-    assert_eq!(14f32.sqrt(), vec3(1., 2., 3.).magnitude());
+    assert_eq!(14f64.sqrt(), vec3(1., 2., 3.).magnitude());
   }
 
   #[test]
   fn vectors_should_compute_magnitude_of_negative_vector() {
-    assert_eq!(14f32.sqrt(), vec3(-1., -2., -3.).magnitude());
+    assert_eq!(14f64.sqrt(), vec3(-1., -2., -3.).magnitude());
   }
 
   #[test]
@@ -401,7 +401,7 @@ mod tests {
   #[test]
   fn reflect_a_vector_off_a_slanted_surface() {
     let vector = vec3(0., -1., 0.);
-    let normal = vec3(2f32.sqrt() / 2., 2f32.sqrt() / 2., 0.);
+    let normal = vec3(2f64.sqrt() / 2., 2f64.sqrt() / 2., 0.);
 
     let reflection = vector.reflect(normal);
 

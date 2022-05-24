@@ -5,16 +5,16 @@ use std::ops::{Add, Mul, Sub};
 use crate::maths::ApproxEq;
 
 /// Creates a new color with the given RGB values.
-pub const fn rgb(r: f32, g: f32, b: f32) -> Color {
+pub const fn rgb(r: f64, g: f64, b: f64) -> Color {
   Color { r, g, b }
 }
 
 /// Describes a color in floating point linear color space.
 #[derive(Copy, Clone, Debug)]
 pub struct Color {
-  pub r: f32,
-  pub g: f32,
-  pub b: f32,
+  pub r: f64,
+  pub g: f64,
+  pub b: f64,
 }
 
 impl Color {
@@ -22,6 +22,7 @@ impl Color {
   pub const RED: Self = rgb(1., 0., 0.);
   pub const GREEN: Self = rgb(0., 1., 0.);
   pub const BLUE: Self = rgb(0., 0., 1.);
+  pub const MAGENTA: Self = rgb(1., 0., 1.);
   pub const WHITE: Self = rgb(1., 1., 1.);
 }
 
@@ -72,10 +73,10 @@ impl Mul for Color {
   }
 }
 
-impl Mul<f32> for Color {
+impl Mul<f64> for Color {
   type Output = Self;
 
-  fn mul(self, rhs: f32) -> Self::Output {
+  fn mul(self, rhs: f64) -> Self::Output {
     Self {
       r: self.r * rhs,
       g: self.g * rhs,

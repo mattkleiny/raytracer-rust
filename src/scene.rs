@@ -230,12 +230,12 @@ impl Scene {
 /// A single intersection in an set.
 pub struct Intersection<'a> {
   pub object: &'a dyn Traceable,
-  pub distance: f32,
+  pub distance: f64,
 }
 
 impl<'a> Intersection<'a> {
   /// Creates a new intersection
-  pub fn new(object: &'a dyn Traceable, distance: f32) -> Self {
+  pub fn new(object: &'a dyn Traceable, distance: f64) -> Self {
     Self { object, distance }
   }
 }
@@ -252,7 +252,7 @@ impl<'a> IntersectionSet<'a> {
   }
 
   /// Adds an intersection to the set.
-  pub fn push(&mut self, object: &'a dyn Traceable, distance: f32) {
+  pub fn push(&mut self, object: &'a dyn Traceable, distance: f64) {
     self.hits.push(Intersection::new(object, distance));
   }
 
@@ -263,7 +263,7 @@ impl<'a> IntersectionSet<'a> {
 
   /// Finds the closest hit intersection.
   pub fn closest_hit(&self) -> Option<Intersection<'a>> {
-    let mut closest_t = f32::MAX;
+    let mut closest_t = f64::MAX;
     let mut closest_object = None;
 
     for hit in &self.hits {
@@ -485,10 +485,10 @@ mod tests {
         .with_transform(Matrix4x4::translate(0., -1., 0.)),
     );
 
-    let ray = Ray::new(point(0., 0., -3.), vec3(0., -2f32.sqrt() / 2., 2f32.sqrt() / 2.));
+    let ray = Ray::new(point(0., 0., -3.), vec3(0., -2f64.sqrt() / 2., 2f64.sqrt() / 2.));
     let object = scene.nodes[2].deref();
 
-    let intersection = Intersection::new(object, 2f32.sqrt());
+    let intersection = Intersection::new(object, 2f64.sqrt());
 
     let color = scene.reflected_color(ray, intersection, 0);
 

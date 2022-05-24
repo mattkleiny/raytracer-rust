@@ -29,7 +29,7 @@ pub struct LightingData<'a> {
   pub eye: Vector,
   pub normal: Vector,
   pub reflect_direction: Vector,
-  pub distance: f32,
+  pub distance: f64,
   pub inside: bool,
 }
 
@@ -145,7 +145,7 @@ mod tests {
     let material = Material::default();
     let position = vec3(0., 0., 0.);
 
-    let eye = vec3(0., 2f32.sqrt() / 2., 2f32.sqrt() / 2.);
+    let eye = vec3(0., 2f64.sqrt() / 2., 2f64.sqrt() / 2.);
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 0., -10.), rgb(1., 1., 1.));
 
@@ -173,7 +173,7 @@ mod tests {
     let material = Material::default();
     let position = vec3(0., 0., 0.);
 
-    let eye = vec3(0., -2f32.sqrt() / 2., -2f32.sqrt() / 2.);
+    let eye = vec3(0., -2f64.sqrt() / 2., -2f64.sqrt() / 2.);
     let normal = vec3(0., 0., -1.);
     let light = PointLight::new(vec3(0., 10., -10.), rgb(1., 1., 1.));
 
@@ -263,12 +263,12 @@ mod tests {
 
   #[test]
   fn calculate_lighting_data_computes_reflection_vector() {
-    let ray = Ray::new(point(0., 1., -1.), vec3(0., -2f32.sqrt() / 2., 2f32.sqrt() / 2.));
+    let ray = Ray::new(point(0., 1., -1.), vec3(0., -2f64.sqrt() / 2., 2f64.sqrt() / 2.));
     let plane = Plane::new(vec3(0., 1., 0.));
     let intersection = Intersection::new(&plane, 1.);
 
     let data = calculate_lighting_data(&intersection, ray);
 
-    assert_eq!(data.reflect_direction, vec3(0., 2f32.sqrt() / 2., 2f32.sqrt() / 2.));
+    assert_eq!(data.reflect_direction, vec3(0., 2f64.sqrt() / 2., 2f64.sqrt() / 2.));
   }
 }

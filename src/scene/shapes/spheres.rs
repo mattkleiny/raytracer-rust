@@ -15,7 +15,7 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
-  fn intersect(&self, world_ray: Ray) -> Vec<f32> {
+  fn intersect(&self, world_ray: Ray) -> Vec<f64> {
     // standard ray sphere intersection
     let sphere_to_ray = world_ray.origin - point(0., 0., 0.);
 
@@ -166,19 +166,19 @@ mod tests {
   #[test]
   fn normal_on_sphere_at_non_axial_point() {
     let sphere = Sphere::new();
-    let point = point(3f32.sqrt() / 3., 3f32.sqrt() / 3., 3f32.sqrt() / 3.);
+    let point = point(3f64.sqrt() / 3., 3f64.sqrt() / 3., 3f64.sqrt() / 3.);
     let normal = sphere.normal_at(point);
 
     assert_eq!(
       normal,
-      vec3(3f32.sqrt() / 3., 3f32.sqrt() / 3., 3f32.sqrt() / 3.)
+      vec3(3f64.sqrt() / 3., 3f64.sqrt() / 3., 3f64.sqrt() / 3.)
     );
   }
 
   #[test]
   fn normal_on_sphere_is_normalised() {
     let sphere = Sphere::new();
-    let point = point(3f32.sqrt() / 3., 3f32.sqrt() / 3., 3f32.sqrt() / 3.);
+    let point = point(3f64.sqrt() / 3., 3f64.sqrt() / 3., 3f64.sqrt() / 3.);
     let normal = sphere.normal_at(point);
 
     assert_eq!(normal.normalize(), normal);
@@ -199,7 +199,7 @@ mod tests {
       .with_transform(Matrix4x4::scale(1., 0.5, 1.))
       .with_transform(Matrix4x4::rotate_z(PI / 5.));
 
-    let normal = sphere.normal_at(point(0., 2f32.sqrt() / 2., -2f32.sqrt() / 2.));
+    let normal = sphere.normal_at(point(0., 2f64.sqrt() / 2., -2f64.sqrt() / 2.));
 
     assert_eq!(normal, vec3(0., 0.97014, -0.24254));
   }

@@ -15,7 +15,7 @@ pub type Matrix4x4 = Matrix<4, 16>;
 /// L = Length of the matrix; total number of elements.
 #[derive(Copy, Clone)]
 pub struct Matrix<const S: usize, const L: usize> {
-  elements: [f32; L],
+  elements: [f64; L],
 }
 
 impl<const S: usize, const L: usize> Matrix<S, L> {
@@ -27,7 +27,7 @@ impl<const S: usize, const L: usize> Matrix<S, L> {
   }
 
   /// Constructs a matrix from the given elements.
-  pub const fn create(elements: &[f32; L]) -> Self {
+  pub const fn create(elements: &[f64; L]) -> Self {
     Self { elements: *elements }
   }
 
@@ -63,7 +63,7 @@ impl<const S: usize, const L: usize> Debug for Matrix<S, L> {
 }
 
 impl<const S: usize, const L: usize> Index<(usize, usize)> for Matrix<S, L> {
-  type Output = f32;
+  type Output = f64;
 
   /// Accesses a single element of the matrix.
   fn index(&self, (row, column): (usize, usize)) -> &Self::Output {
@@ -151,12 +151,12 @@ impl Matrix4x4 {
   }
 
   /// Computes the determinant of the sub-matrix with the given row and column removed.
-  pub fn minor(&self, row: usize, column: usize) -> f32 {
+  pub fn minor(&self, row: usize, column: usize) -> f64 {
     self.to_sub_matrix(row, column).determinant()
   }
 
   /// Calculates the cofactor of the matrix with the given row and column removed.
-  pub fn cofactor(&self, row: usize, column: usize) -> f32 {
+  pub fn cofactor(&self, row: usize, column: usize) -> f64 {
     let minor = self.minor(row, column);
 
     if (row + column) % 2 == 0 {
@@ -169,7 +169,7 @@ impl Matrix4x4 {
   /// Computes the determinant of the matrix.
   ///
   /// A determinant 'determines' whether a system of equations has a solution.
-  pub fn determinant(&self) -> f32 {
+  pub fn determinant(&self) -> f64 {
     let mut result = 0.;
 
     for i in 0..4 {
@@ -235,12 +235,12 @@ impl Matrix3x3 {
   }
 
   /// Computes the determinant of the sub-matrix with the given row and column removed.
-  pub fn minor(&self, row: usize, column: usize) -> f32 {
+  pub fn minor(&self, row: usize, column: usize) -> f64 {
     self.to_sub_matrix(row, column).determinant()
   }
 
   /// Calculates the cofactor of the matrix with the given row and column removed.
-  pub fn cofactor(&self, row: usize, column: usize) -> f32 {
+  pub fn cofactor(&self, row: usize, column: usize) -> f64 {
     let minor = self.minor(row, column);
 
     if (row + column) % 2 == 0 {
@@ -253,7 +253,7 @@ impl Matrix3x3 {
   /// Computes the determinant of the matrix.
   ///
   /// A determinant 'determines' whether a system has a solution.
-  pub fn determinant(&self) -> f32 {
+  pub fn determinant(&self) -> f64 {
     let mut result = 0.;
 
     for i in 0..3 {
@@ -279,7 +279,7 @@ impl Matrix2x2 {
   /// Computes the determinant of the matrix.
   ///
   /// A determinant 'determines' whether a system has a solution.
-  pub fn determinant(&self) -> f32 {
+  pub fn determinant(&self) -> f64 {
     let [a, b, c, d] = self.elements;
 
     a * d - b * c

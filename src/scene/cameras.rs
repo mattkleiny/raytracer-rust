@@ -7,18 +7,18 @@ use crate::scene::Scene;
 pub struct Camera {
   width: u32,
   height: u32,
-  half_width: f32,
-  half_height: f32,
-  field_of_view: f32,
-  pixel_size: f32,
+  half_width: f64,
+  half_height: f64,
+  field_of_view: f64,
+  pixel_size: f64,
   pub transform: Matrix4x4,
 }
 
 impl Camera {
   /// Creates a new camera with the given dimensions.
-  pub fn new(width: u32, height: u32, field_of_view: f32) -> Self {
+  pub fn new(width: u32, height: u32, field_of_view: f64) -> Self {
     let half_view = (field_of_view / 2.).tan();
-    let aspect = width as f32 / height as f32;
+    let aspect = width as f64 / height as f64;
 
     let half_width;
     let half_height;
@@ -37,15 +37,15 @@ impl Camera {
       half_width,
       half_height,
       field_of_view,
-      pixel_size: (half_width * 2.) / width as f32,
+      pixel_size: (half_width * 2.) / width as f64,
       transform: Matrix4x4::identity(),
     }
   }
 
   /// Creates a ray for the given pixel (x, y) on the camera.
   pub fn ray_for_pixel(&self, x: usize, y: usize) -> Ray {
-    let x_offset = (x as f32 + 0.5) * self.pixel_size;
-    let y_offset = (y as f32 + 0.5) * self.pixel_size;
+    let x_offset = (x as f64 + 0.5) * self.pixel_size;
+    let y_offset = (y as f64 + 0.5) * self.pixel_size;
 
     let world_x = self.half_width - x_offset;
     let world_y = self.half_height - y_offset;
@@ -121,6 +121,6 @@ mod tests {
     let ray = camera.ray_for_pixel(100, 50);
 
     assert_eq!(ray.origin, point(0., 2., -5.));
-    assert_eq!(ray.direction, vec3(2f32.sqrt() / 2., 0., -2f32.sqrt() / 2.));
+    assert_eq!(ray.direction, vec3(2f64.sqrt() / 2., 0., -2f64.sqrt() / 2.));
   }
 }

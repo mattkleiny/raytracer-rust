@@ -4,7 +4,7 @@ use crate::maths::{Matrix4x4, Vector};
 
 impl Matrix4x4 {
   /// Creates a new translation matrix.
-  pub fn translate(x: f32, y: f32, z: f32) -> Self {
+  pub fn translate(x: f64, y: f64, z: f64) -> Self {
     Self::create(&[
       1.0, 0.0, 0.0, x,
       0.0, 1.0, 0.0, y,
@@ -14,7 +14,7 @@ impl Matrix4x4 {
   }
 
   /// Creates a new scale matrix.
-  pub fn scale(x: f32, y: f32, z: f32) -> Self {
+  pub fn scale(x: f64, y: f64, z: f64) -> Self {
     Self::create(&[
       x, 0.0, 0.0, 0.0,
       0.0, y, 0.0, 0.0,
@@ -24,7 +24,7 @@ impl Matrix4x4 {
   }
 
   /// Creates a new rotation matrix about the X axis.
-  pub fn rotate_x(r: f32) -> Self {
+  pub fn rotate_x(r: f64) -> Self {
     Self::create(&[
       1.0, 0.0, 0.0, 0.0,
       0.0, r.cos(), -r.sin(), 0.0,
@@ -34,7 +34,7 @@ impl Matrix4x4 {
   }
 
   /// Creates a new rotation matrix about the Y axis.
-  pub fn rotate_y(r: f32) -> Self {
+  pub fn rotate_y(r: f64) -> Self {
     Self::create(&[
       r.cos(), 0.0, r.sin(), 0.0,
       0.0, 1.0, 0.0, 0.0,
@@ -44,7 +44,7 @@ impl Matrix4x4 {
   }
 
   /// Creates a new rotation matrix about the Z axis.
-  pub fn rotate_z(r: f32) -> Self {
+  pub fn rotate_z(r: f64) -> Self {
     Self::create(&[
       r.cos(), -r.sin(), 0.0, 0.0,
       r.sin(), r.cos(), 0.0, 0.0,
@@ -54,7 +54,7 @@ impl Matrix4x4 {
   }
 
   /// Creates a new shearing matrix with the given proportions.
-  pub fn shear(x1: f32, x2: f32, y1: f32, y2: f32, z1: f32, z2: f32) -> Self {
+  pub fn shear(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64) -> Self {
     Self::create(&[
       1.0, x1, x2, 0.0,
       y1, 1.0, y2, 0.0,
@@ -153,7 +153,7 @@ mod tests {
     let half_quarter = Matrix4x4::rotate_x(PI / 4.);
     let full_quarter = Matrix4x4::rotate_x(PI / 2.);
 
-    assert_eq!(half_quarter * p, point(0., 2f32.sqrt() / 2., 2f32.sqrt() / 2.));
+    assert_eq!(half_quarter * p, point(0., 2f64.sqrt() / 2., 2f64.sqrt() / 2.));
     assert_eq!(full_quarter * p, point(0., 0., 1.));
   }
 
@@ -164,7 +164,7 @@ mod tests {
     let half_quarter = Matrix4x4::rotate_x(PI / 4.);
     let inverse = half_quarter.invert().expect("Failed to invert");
 
-    assert_eq!(inverse * p, point(0., 2f32.sqrt() / 2., -2f32.sqrt() / 2.));
+    assert_eq!(inverse * p, point(0., 2f64.sqrt() / 2., -2f64.sqrt() / 2.));
   }
 
   #[test]
@@ -174,7 +174,7 @@ mod tests {
     let half_quarter = Matrix4x4::rotate_y(PI / 4.);
     let full_quarter = Matrix4x4::rotate_y(PI / 2.);
 
-    assert_eq!(half_quarter * p, point(2f32.sqrt() / 2., 0., 2f32.sqrt() / 2.));
+    assert_eq!(half_quarter * p, point(2f64.sqrt() / 2., 0., 2f64.sqrt() / 2.));
     assert_eq!(full_quarter * p, point(1., 0., 0.));
   }
 
@@ -185,7 +185,7 @@ mod tests {
     let half_quarter = Matrix4x4::rotate_z(PI / 4.);
     let full_quarter = Matrix4x4::rotate_z(PI / 2.);
 
-    assert_eq!(half_quarter * p, point(-2f32.sqrt() / 2., 2f32.sqrt() / 2., 0.));
+    assert_eq!(half_quarter * p, point(-2f64.sqrt() / 2., 2f64.sqrt() / 2., 0.));
     assert_eq!(full_quarter * p, point(-1., 0., 0.));
   }
 

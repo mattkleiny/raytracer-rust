@@ -19,7 +19,7 @@ impl Plane {
 }
 
 impl Shape for Plane {
-  fn intersect(&self, object_ray: Ray) -> Vec<f32> {
+  fn intersect(&self, object_ray: Ray) -> Vec<f64> {
     if object_ray.direction.y.abs() < 0.00001 {
       vec![]
     } else {
