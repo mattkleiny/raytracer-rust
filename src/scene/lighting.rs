@@ -26,6 +26,7 @@ pub struct LightingData<'a> {
   pub world_position: Point,
   pub world_position_bias: Point,
   pub object_position: Point,
+  pub object_position_bias: Point,
   pub eye: Vector,
   pub normal: Vector,
   pub reflect_direction: Vector,
@@ -46,6 +47,7 @@ impl<'a> LightingData<'a> {
 
     let world_position_bias = world_position + normal * 0.0001;
     let object_position = object.world_to_object(world_position);
+    let object_position_bias = object_position + normal * 0.0001;
 
     let reflect_direction = ray.direction.reflect(normal);
 
@@ -59,6 +61,7 @@ impl<'a> LightingData<'a> {
       world_position,
       world_position_bias,
       object_position,
+      object_position_bias,
       eye,
       normal,
       reflect_direction,
