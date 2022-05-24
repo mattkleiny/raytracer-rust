@@ -1,5 +1,5 @@
 use crate::graphics::Canvas;
-use crate::maths::{Matrix4x4, point, Ray};
+use crate::maths::{point, Matrix4x4, Ray};
 use crate::scene::Scene;
 
 /// A camera for orientating a view transform.
@@ -50,7 +50,10 @@ impl Camera {
     let world_x = self.half_width - x_offset;
     let world_y = self.half_height - y_offset;
 
-    let inverse = self.transform.invert().expect("Failed to invert camera transform");
+    let inverse = self
+      .transform
+      .invert()
+      .expect("Failed to invert camera transform");
 
     let pixel = inverse * point(world_x, world_y, -1.);
     let origin = inverse * point(0., 0., 0.);
@@ -78,7 +81,7 @@ impl Camera {
 
 #[cfg(test)]
 mod tests {
-  use crate::maths::{PI, vec3};
+  use crate::maths::{vec3, ApproxEq, PI};
 
   use super::*;
 
@@ -86,14 +89,14 @@ mod tests {
   fn pixel_size_for_horizontal_canvas() {
     let camera = Camera::new(200, 125, PI / 2.);
 
-    assert_eq!(camera.pixel_size, 0.01);
+    assert!(camera.pixel_size.is_approx(0.01));
   }
 
   #[test]
   fn pixel_size_for_vertical_camera() {
     let camera = Camera::new(125, 200, PI / 2.);
 
-    assert_eq!(camera.pixel_size, 0.01);
+    assert!(camera.pixel_size.is_approx(0.01));
   }
 
   #[test]

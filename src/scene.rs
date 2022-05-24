@@ -165,7 +165,7 @@ impl Scene {
   fn apply_lighting(&self, ray: Ray, intersection: Intersection, depth: usize) -> Color {
     let mut surface = self.ambient_color;
 
-    let lighting_data = calculate_lighting_data(&intersection, ray);
+    let lighting_data = LightingData::calculate(&intersection, ray);
     let in_shadow = self.is_shadowed(lighting_data.world_position_bias);
 
     // calculate direct surface lighting
@@ -182,7 +182,7 @@ impl Scene {
     }
 
     // calculate reflective properties
-    let reflected = self.reflected_color(ray, intersection, depth);
+    let reflected = self.reflected_color(&lighting_data, depth);
 
     surface + reflected
   }
@@ -208,15 +208,12 @@ impl Scene {
   }
 
   /// Determines the reflected color of the given ray.
-  fn reflected_color(&self, ray: Ray, intersection: Intersection, depth: usize) -> Color {
-    let material = intersection.object.material();
+  fn reflected_color(&self, lighting_data: &LightingData, depth: usize) -> Color {
+    let material = lighting_data.object.material();
 
     if material.reflective.is_approx(0.) {
       return Color::BLACK;
     }
-
-    // TODO: re-use this between two methods?
-    let lighting_data = calculate_lighting_data(&intersection, ray);
 
     let reflect_ray = Ray::new(
       lighting_data.world_position_bias,
@@ -468,8 +465,9 @@ mod tests {
     let object = scene.nodes[1].deref();
 
     let intersection = Intersection::new(object, -1.);
+    let lighting_data = LightingData::calculate(&intersection, ray);
 
-    let color = scene.reflected_color(ray, intersection, 0);
+    let color = scene.reflected_color(&lighting_data, 0);
 
     assert_eq!(color, Color::BLACK);
   }
@@ -489,8 +487,9 @@ mod tests {
     let object = scene.nodes[2].deref();
 
     let intersection = Intersection::new(object, 2f64.sqrt());
+    let lighting_data = LightingData::calculate(&intersection, ray);
 
-    let color = scene.reflected_color(ray, intersection, 0);
+    let color = scene.reflected_color(&lighting_data, 0);
 
     assert_eq!(color, rgb(0.19007981, 0.23759975, 0.14255986));
   }

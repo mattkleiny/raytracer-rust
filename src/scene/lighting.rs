@@ -33,49 +33,43 @@ pub struct LightingData<'a> {
   pub inside: bool,
 }
 
-/// Pre-computes the lighting data used in the phong model.
-pub fn calculate_lighting_data<'a>(intersection: &'a Intersection, ray: Ray) -> LightingData<'a> {
-  let object = intersection.object;
-  let world_position = ray.position(intersection.distance);
-  let eye = -ray.direction;
-  let distance = intersection.distance;
+impl<'a> LightingData<'a> { 
+  /// Pre-computes the lighting data used in the phong model.
+  pub fn calculate(intersection: &'a Intersection, ray: Ray) -> Self {
+    let object = intersection.object;
+    let world_position = ray.position(intersection.distance);
+    let eye = -ray.direction;
+    let distance = intersection.distance;
 
-  let mut normal = object.normal_at(world_position);
-  let mut inside = false;
+    let mut normal = object.normal_at(world_position);
+    let mut inside = false;
 
-  let world_position_bias = world_position + normal * 0.0001;
-  let object_position = object.world_to_object(world_position);
+    let world_position_bias = world_position + normal * 0.0001;
+    let object_position = object.world_to_object(world_position);
 
-  let reflect_direction = ray.direction.reflect(normal);
+    let reflect_direction = ray.direction.reflect(normal);
 
-  if normal.dot(eye) < 0. {
-    normal = -normal;
-    inside = true;
-  }
+    if normal.dot(eye) < 0. {
+      normal = -normal;
+      inside = true;
+    }
 
-  LightingData {
-    object,
-    world_position,
-    world_position_bias,
-    object_position,
-    eye,
-    normal,
-    reflect_direction,
-    inside,
-    distance,
+    Self {
+      object,
+      world_position,
+      world_position_bias,
+      object_position,
+      eye,
+      normal,
+      reflect_direction,
+      inside,
+      distance,
+    }
   }
 }
 
 /// Computes lighting for a particular point in the scene via phong model.
-pub fn phong_lighting(
-  material: &Material,
-  light: &PointLight,
-  world_position: Vector,
-  object_position: Vector,
-  eye: Vector,
-  normal: Vector,
-  in_shadow: bool,
-) -> Color {
+pub fn phong_lighting(material: &Material, light: &PointLight, world_position: Vector, object_position: Vector, eye: Vector, normal: Vector, in_shadow: bool) -> Color {
   // combine surface color with the light color/intensity
   let effective_color = material.texture.sample_at(object_position) * light.intensity;
 
@@ -179,7 +173,7 @@ mod tests {
 
     let result = phong_lighting(&material, &light, position, position, eye, normal, false);
 
-    assert_eq!(result, rgb(1.6363853, 1.6363853, 1.6363853));
+    assert_eq!(result, rgb(1.6363961030678928, 1.6363961030678928, 1.6363961030678928));
   }
 
   #[test]
@@ -202,7 +196,7 @@ mod tests {
     let sphere = Sphere::new();
     let intersection = Intersection::new(&sphere, 4.);
 
-    let data = calculate_lighting_data(&intersection, ray);
+    let data = LightingData::calculate(&intersection, ray);
 
     assert_eq!(data.world_position, point(0., 0., -1.));
     assert_eq!(data.eye, vec3(0., 0., -1.));
@@ -215,7 +209,7 @@ mod tests {
     let sphere = Sphere::new();
     let intersection = Intersection::new(&sphere, 4.);
 
-    let data = calculate_lighting_data(&intersection, ray);
+    let data = LightingData::calculate(&intersection, ray);
 
     assert_eq!(data.inside, false);
   }
@@ -226,7 +220,7 @@ mod tests {
     let sphere = Sphere::new();
     let intersection = Intersection::new(&sphere, 1.);
 
-    let data = calculate_lighting_data(&intersection, ray);
+    let data = LightingData::calculate(&intersection, ray);
 
     assert_eq!(data.world_position, point(0., 0., 1.));
     assert_eq!(data.eye, vec3(0., 0., -1.));
@@ -240,7 +234,7 @@ mod tests {
     let sphere = Sphere::new().with_transform(Matrix4x4::translate(0., 0., 1.));
     let intersection = Intersection::new(&sphere, 5.);
 
-    let data = calculate_lighting_data(&intersection, ray);
+    let data = LightingData::calculate(&intersection, ray);
 
     assert!(data.world_position_bias.z < EPSILON / 2.);
     assert!(data.world_position.z > data.world_position_bias.z);
@@ -267,7 +261,7 @@ mod tests {
     let plane = Plane::new(vec3(0., 1., 0.));
     let intersection = Intersection::new(&plane, 1.);
 
-    let data = calculate_lighting_data(&intersection, ray);
+    let data = LightingData::calculate(&intersection, ray);
 
     assert_eq!(data.reflect_direction, vec3(0., 2f64.sqrt() / 2., 2f64.sqrt() / 2.));
   }
