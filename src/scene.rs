@@ -171,7 +171,7 @@ impl Scene {
         &lighting_data.object.material(),
         light,
         lighting_data.world_position_bias,
-        lighting_data.object_position_bias,
+        lighting_data.object_position,
         lighting_data.eye,
         lighting_data.normal,
         in_shadow,
