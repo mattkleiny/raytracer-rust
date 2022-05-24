@@ -15,7 +15,7 @@ fn main() -> anyhow::Result<()> {
 
   // lets render a simple scene
   let scene = PackedScene::from_yaml_file("assets/scenes/test01.yaml")?.build()?;
-  let camera = Camera::new(1920 / 2, 1080 / 2, PI / 3.);
+  let camera = Camera::new(1920, 1080, PI / 3.);
 
   camera.render(&scene).save_to_png("./output.png")?;
 

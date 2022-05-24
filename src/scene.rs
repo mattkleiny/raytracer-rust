@@ -53,7 +53,10 @@ impl<S> SceneNode<S> {
 
   /// Sets the transform for this node.
   pub fn with_transform(self, transform: Matrix4x4) -> Self {
-    let inverse_transform = transform.invert().unwrap_or(transform);
+    // pre-compute the inverse transform
+    let inverse_transform = transform
+      .invert()
+      .unwrap_or(Matrix4x4::identity());
 
     Self { transform, inverse_transform, ..self }
   }
@@ -136,7 +139,7 @@ impl Scene {
 
   /// Computes the color of the scene at the given ray.
   fn trace_inner(&self, ray: Ray, depth: usize) -> Color {
-    if depth > Self::MAX_DEPTH {
+    if depth >= Self::MAX_DEPTH {
       return self.ambient_color;
     }
 
@@ -170,14 +173,14 @@ impl Scene {
     let mut surface = self.ambient_color;
 
     let lighting_data = LightingData::calculate(ray, &hit, &hits);
-    let in_shadow = self.is_shadowed(lighting_data.world_position_bias);
+    let in_shadow = self.is_shadowed(lighting_data.over_position);
 
     // calculate direct surface lighting
     for light in &self.lights {
       surface = surface + phong_lighting(
         light,
         &lighting_data.object.material(),
-        lighting_data.world_position_bias,
+        lighting_data.over_position,
         lighting_data.object_position,
         lighting_data.eye,
         lighting_data.normal,
@@ -187,8 +190,18 @@ impl Scene {
 
     // calculate reflective properties
     let reflected = self.reflected_color(&lighting_data, depth);
+    let refracted = self.refracted_color(&lighting_data, depth);
 
-    surface + reflected
+    // combine the results
+    let material = hit.object.material();
+    if material.reflectivity > 0. && material.transparency > 0. {
+      let reflectance = Self::shlick(&lighting_data);
+
+      surface + reflected * reflectance + refracted * (1. - reflectance)
+    }
+    else {
+      surface + reflected + refracted
+    }
   }
 
   /// Determines if the given point is in shadow.
@@ -220,11 +233,65 @@ impl Scene {
     }
 
     let reflect_ray = Ray::new(
-      lighting_data.world_position_bias,
+      lighting_data.over_position,
       lighting_data.reflect_direction,
     );
 
     self.trace_inner(reflect_ray, depth + 1) * material.reflectivity
+  }
+
+  /// Determines the refracted color of the given ray.
+  fn refracted_color(&self, lighting_data: &LightingData, depth: usize) -> Color {
+    if depth >= Self::MAX_DEPTH {
+      return Color::BLACK;
+    }
+
+    let material = lighting_data.object.material();
+    let [n1, n2] = lighting_data.refractivity;
+
+    if material.transparency.is_approx(0.) {
+      return Color::BLACK;
+    }
+
+    // TODO: add some more tests for this section
+    let n_ratio = n1 / n2;
+    let cos_i = lighting_data.eye.dot(lighting_data.normal);
+    let sin_t2 = n_ratio * n_ratio * (1. - cos_i * cos_i);
+
+    if sin_t2 > 1. {
+      return Color::BLACK;
+    }
+
+    let cos_t = (1. - sin_t2).sqrt();
+    let direction = lighting_data.normal * (n_ratio + cos_i - cos_t) - lighting_data.eye * n_ratio;
+
+    let ray = Ray::new(lighting_data.under_position, direction);
+    let color = self.trace_inner(ray, depth + 1);
+
+    return color * material.transparency;
+  }
+
+  /// Finds the Shlick approximation
+  fn shlick(lighting_data: &LightingData) -> f64 {
+    let [n1, n2] = &lighting_data.refractivity;
+    let mut cos = lighting_data.eye.dot(lighting_data.normal);
+
+    if n1 > n2 {
+      let n = n1 / n2;
+      let sin_t2 = n * n * (1. - cos * cos);
+
+      if sin_t2 > 1. {
+        return 1.
+      }
+
+      let cos_t = (1. - sin_t2).sqrt();
+      cos = cos_t;
+    }
+
+    let r0 = (n1 - n2) / (n1 + n2);
+    let r02 = r0 * r0;
+
+    return r02 + (1. - r02) * (1. - cos).powi(5);
   }
 }
 
@@ -292,7 +359,7 @@ impl PartialEq for Hit<'_> {
     let ptr_a = self.object as *const _;
     let ptr_b = other.object as *const _;
 
-    self.distance == other.distance && ptr_a == ptr_b
+    self.distance.is_approx(other.distance) && ptr_a == ptr_b
   }
 }
 
@@ -522,6 +589,78 @@ mod tests {
     let color = scene.reflected_color(&lighting_data, 0);
 
     assert_eq!(color, rgb(0.19007981, 0.23759975, 0.14255986));
+  }
+
+  #[test]
+  fn refracted_color_for_refractive_material() {
+    let scene = create_test_scene();
+    let object = scene.nodes[0].deref();
+
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
+
+    let mut hits = HitList::new();
+    hits.push(object, 4.);
+    hits.push(object, 6.);
+
+    let lighting_data = LightingData::calculate(ray, &hits[0], &hits);
+
+    let color = scene.refracted_color(&lighting_data, 5);
+
+    assert_eq!(color, Color::BLACK);
+  }
+
+  #[test]
+  fn refracted_color_for_refractive_material_at_max_depth() {
+    let mut scene = create_test_scene();
+
+    scene.add_object(
+      Sphere::new()
+        .with_material(Material::default()
+          .with_transparency(1.)
+          .with_refractivity(1.5)
+        )
+    );
+
+    let object = scene.nodes[2].deref();
+
+    let ray = Ray::new(point(0., 0., -5.), vec3(0., 0., 1.));
+    let mut hits = HitList::new();
+
+    hits.push(object, 4.);
+    hits.push(object, 6.);
+
+    let lighting_data = LightingData::calculate(ray, &hits[0], &hits);
+
+    let color = scene.refracted_color(&lighting_data, Scene::MAX_DEPTH);
+
+    assert_eq!(color, Color::BLACK);
+  }
+
+  #[test]
+  fn refracted_color_for_refractive_material_under_total_internal_reflection() {
+    let mut scene = create_test_scene();
+
+    scene.add_object(
+      Sphere::new()
+        .with_material(Material::default()
+          .with_transparency(1.)
+          .with_refractivity(1.5)
+        )
+    );
+
+    let object = scene.nodes[2].deref();
+
+    let ray = Ray::new(point(0., 0., 2f64.sqrt() / 2.), vec3(0., 1., 0.));
+    let mut hits = HitList::new();
+
+    hits.push(object, -2f64.sqrt() / 2.);
+    hits.push(object, 2f64.sqrt() / 2.);
+
+    let lighting_data = LightingData::calculate(ray, &hits[0], &hits);
+
+    let color = scene.refracted_color(&lighting_data, 5);
+
+    assert_eq!(color, Color::BLACK);
   }
 
   /// Creates a default scene with two spheres a single light source.

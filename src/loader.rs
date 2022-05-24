@@ -110,14 +110,16 @@ struct PackedMaterial {
 
 impl PackedMaterial {
   pub fn build(&self) -> Material {
+    let default = Material::default();
+
     let texture = self.texture.unwrap_or(PackedTexture::Solid([1., 1., 1.]));
-    let ambient = self.ambient.unwrap_or(0.1);
-    let diffuse = self.diffuse.unwrap_or(0.9);
-    let specular = self.specular.unwrap_or(0.9);
-    let shininess = self.shininess.unwrap_or(200.);
-    let transparency = self.transparency.unwrap_or(0.);
-    let reflectivity = self.reflectivity.unwrap_or(0.);
-    let refractivity = self.refractivity.unwrap_or(1.);
+    let ambient = self.ambient.unwrap_or(default.ambient);
+    let diffuse = self.diffuse.unwrap_or(default.diffuse);
+    let specular = self.specular.unwrap_or(default.specular);
+    let shininess = self.shininess.unwrap_or(default.shininess);
+    let transparency = self.transparency.unwrap_or(default.transparency);
+    let reflectivity = self.reflectivity.unwrap_or(default.reflectivity);
+    let refractivity = self.refractivity.unwrap_or(default.refractivity);
 
     Material {
       texture: texture.build(),
